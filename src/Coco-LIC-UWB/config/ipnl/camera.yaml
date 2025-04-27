@@ -1,0 +1,32 @@
+%YAML:1.0
+
+# be cautious that whether the rosmsg of the image is compressed
+if_compressed: false
+# image_topic: /zed2/camera/left/image_raw
+image_topic: /camera/image_color
+# if_compressed: true
+# image_topic: /left_camera/image/compressed
+
+image_width: 672 
+image_height: 376 
+cam_fx: 264.9425
+cam_fy: 264.79
+cam_cx: 334.3975
+cam_cy: 183.162
+cam_d0: -0.0442856
+cam_d1: 0.0133574
+cam_d2: 0.0
+cam_d3: 0.0
+cam_d4: 0.0
+
+CameraExtrinsics:  # camera to imu
+    time_offset: 0.000
+    Trans: [-8.4994249456545504e-02, 6.6169337079143220e-01, -3.0104266183335913e+00]
+    Rot: [ 9.9934608718980233e-01, -1.5715484428488590e-02,-3.2564114721728155e-02,
+           3.2359037356803094e-02, -1.3131917124154624e-02,9.9939003669937865e-01, 
+           1.6133527815482926e-02, -9.9979026615676858e-01,-1.2614792047622947e-02 ]
+    # Rot: [ 9.9885234402635936e-01, 1.3591158885981787e-03, 4.7876378696062108e-02, 
+    #         -4.7864188349269129e-02, -7.9091258538426246e-03, 9.9882253939420773e-01, 
+    #         1.7361758877140372e-03, -9.9996779874765440e-01, -7.8349959194297103e-03]
+
+
