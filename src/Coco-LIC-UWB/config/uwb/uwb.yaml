@@ -1,4 +1,4 @@
-uwb_range_topic: /nlink_linktrack_tagframe0
+uwb_range_topic: /nlink_linktrack_nodeframe3
 
 num_uwb: 7
 # an array, the IDs of the UWB anchors (the last ID is the moving module to be localized)

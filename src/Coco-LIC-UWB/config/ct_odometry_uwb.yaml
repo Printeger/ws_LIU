@@ -1,4 +1,4 @@
-odometry_mode: 2  # LIO = 0, LICO = 1， LIU = 2, LICU = 3, IU = 4
+odometry_mode: 0  # LIO = 0, LICO = 1， LIU = 2, LICU = 3, IU = 4
 
 log_path: /home/mint/ws_uav_setup/src/Coco-LIC-UWB/log
 config_path: /home/mint/ws_uav_setup/src/Coco-LIC-UWB/config
@@ -7,7 +7,7 @@ imu_yaml: /uwb/imu.yaml
 camera_yaml: /uwb/camera.yaml
 uwb_yaml: /uwb/uwb.yaml
 
-bag_path: /home/mint/dataset/wuxi/wuxi_uwb/2025-01-22-16-31-06_camera_lidar_imu_uwb.bag  #2024-10-09-14-58-15.bag, 2024-10-09-15-23-03.bag
+bag_path: /home/mint/dataset/wuxi/wuxi_uwb/2025-04-25-11-30-21_uwb_lidar_imu.bag  #2025-01-22-16-31-06_camera_lidar_imu_uwb.bag
 bag_start: 0.
 bag_durr: -1
 
@@ -22,7 +22,7 @@ division_coarse: 1  # if it is uniform, decide how many control points to place 
 t_begin_add_cam: 5.0  # [s] visual constraints will be added after the system has been successfully initialized for a while
 lidar_iter: 2
 use_lidar_scale: true  # scale the lidar weight
-lidar_weight: 10.0
+lidar_weight: 100.0
 image_weight: 4.0
 uwb_weight: 0.1
 

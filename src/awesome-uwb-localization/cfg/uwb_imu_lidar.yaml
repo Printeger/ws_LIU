@@ -1,0 +1,51 @@
+# parameters for robots
+robot:
+  trajectory_length: 20
+  maximum_velocity: 5.0
+  distance_outlier: 100
+
+# parameters for g2o optimizer
+optimizer:
+  maximum_iteration: 20
+  verbose: false
+
+# parameters for topic subscription
+topic:
+  range: /nlink_linktrack_nodeframe3
+  imu: /livox/imu
+  gt: /leica/pose/relative
+
+publish_flag:
+  tf: true
+  # publish estimation when the following topics are received.
+  # topics available in {range, pose, twist, imu}. false in default
+  range: true
+  #  imu: false
+
+# fused pose topic frame
+frame:
+  target: /uwb_imu
+  source: /world
+
+uwb:
+  nodesId: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]
+  nodesPos: [0, 0, 0,
+            13.023, 77.497, 0.038,
+            -49.342, 85.832, -0.162, 
+            -58.484, 7.827, -0.162,
+            -32.864, 26.932, 18.552,
+            -31.517, 36.976, 18.523,
+            0.962, 62.839, 18.512,
+            2.421, 74.731, 18.509,
+            -9.230, 76.332, 18.535,
+            -42.454, 46.909, 18.510,
+            -44.855, 28.688, 18.577,
+            1, 1, 1]
+  antennaOffset: [0.0, 0.0, 0.0, 
+                  0.0, 0.0, 0.0, 
+                  0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0] # UWB 偏移量

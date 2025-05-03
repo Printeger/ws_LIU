@@ -1,0 +1,32 @@
+# parameters for robots
+robot:
+  trajectory_length: 10
+  maximum_velocity: 5.0
+  distance_outlier: 1
+
+# parameters for g2o optimizer
+optimizer:
+  maximum_iteration: 10
+  minimum_optimize_error: 2000
+  # if the optimization error is larger than this value, that estimation will be skipped
+  verbose: false
+
+# parameters for topic subscription
+topic:
+  range: /nlink_linktrack_tagframe0
+
+publish_flag:
+  tf: true
+  # publish estimation when the following topics are received.
+  # topics available in {range, pose, twist, imu}. false in default
+  range: true
+
+# fused pose topic frame
+frame:
+  target: /uwb_localization
+  source: /world
+
+uwb:
+  nodesId: [100, 101, 102, 103, 200]
+  nodesPos: [3, -3, 0.53, 3, 3, 1.95, -3, 3, 0.54, -3, -3, 1.98, 0, 0, 1.0]
+  antennaOffset: [-0.2, 0, 0, 0.2, 0, 0, 0, -0.2, 0]

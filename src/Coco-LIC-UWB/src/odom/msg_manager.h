@@ -81,6 +81,10 @@ struct UwbData {
   std::unordered_map<int, double> anchor_distances;
   Eigen::Vector3d tag_position;
   bool is_time_wrt_traj_start;
+  float fp_rssi;  // 第一路径信号强度
+  float rx_rssi;  // 总接收信号强度
+  // “rx_rssi - fp_rssi”小于6dB 时，很有可能处于视距（LOS）状态；
+  // 当大于10dB时，很有可能处于非视距（NLOS）或多径状态，
 };
 
 struct NextMsgs {
@@ -309,6 +313,7 @@ class MsgManager {
   void ImageMsgHandle(const sensor_msgs::CompressedImageConstPtr &msg);
 
   void UwbMsgHandle(const nlink_parser::LinktrackTagframe0::ConstPtr &uwb_msg);
+  void UwbMsgHandle(const nlink_parser::LinktrackNodeframe3::ConstPtr &uwb_msg);
 
   void GetUWBPosInit(UwbData &measurements);
   void GetUWBPos(UwbData &measurements);

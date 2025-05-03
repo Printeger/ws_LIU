@@ -226,10 +226,20 @@ void MsgManager::SpinBagOnce() {
       ImageMsgHandle(image_msg);
     }
   } else if (msg_topic == uwb_topic_) {
-    auto uwb_msg = m.instantiate<nlink_parser::LinktrackTagframe0>();
-    UwbMsgHandle(uwb_msg);
-    if (uwb_buf_.empty()) {
-      LOG(ERROR) << "UWB buf empty ";
+    std::string uwb_topic_1 = "/nlink_linktrack_tagframe0";
+    std::string uwb_topic_2 = "/nlink_linktrack_nodeframe3";
+    if (uwb_topic_ == uwb_topic_1) {
+      auto uwb_msg = m.instantiate<nlink_parser::LinktrackTagframe0>();
+      UwbMsgHandle(uwb_msg);
+      if (uwb_buf_.empty()) {
+        LOG(ERROR) << "UWB buf empty ";
+      }
+    } else if (uwb_topic_ == uwb_topic_2) {
+      auto uwb_msg = m.instantiate<nlink_parser::LinktrackNodeframe3>();
+      UwbMsgHandle(uwb_msg);
+      if (uwb_buf_.empty()) {
+        LOG(ERROR) << "UWB buf empty ";
+      }
     }
   }
 
@@ -842,6 +852,32 @@ void MsgManager::UwbMsgHandle(
   temp_uwb_data.anchor_num = anchor_num;
   temp_uwb_data.tag_position = Eigen::Vector3d(
       uwb_msg->pos_3d[0], uwb_msg->pos_3d[1], uwb_msg->pos_3d[2]);
+
+  // GetUWBPos(temp_uwb_data);
+  if (!is_uwb_init_) {
+    GetUWBPosInit(temp_uwb_data);
+    is_uwb_init_ = true;
+  }
+  temp_uwb_data.anchor_positions = anchor_id_positions;
+
+  uwb_buf_.emplace_back(temp_uwb_data);
+}
+
+void MsgManager::UwbMsgHandle(
+    const nlink_parser::LinktrackNodeframe3::ConstPtr &uwb_msg) {
+  UwbData temp_uwb_data;
+  temp_uwb_data.timestamp = uwb_msg->header.stamp.nsec;
+  LOG(INFO) << "[Debug] UWB timestamp: " << temp_uwb_data.timestamp;
+
+  int anchor_num = 0;
+  for (auto node_ : uwb_msg->nodes) {
+    temp_uwb_data.anchor_distances.emplace(node_.id, node_.dis);
+    temp_uwb_data.fp_rssi = node_.fp_rssi;
+    temp_uwb_data.rx_rssi = node_.rx_rssi;
+  }
+
+  LOG(INFO) << "UWB anchor_num: " << anchor_num;
+  temp_uwb_data.anchor_num = anchor_num;
 
   // GetUWBPos(temp_uwb_data);
   if (!is_uwb_init_) {
