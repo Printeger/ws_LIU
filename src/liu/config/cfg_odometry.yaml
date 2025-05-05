@@ -1,0 +1,142 @@
+odometry_mode: 0  # LIO = 0, LICO = 1， LIU = 2, LICU = 3, IU = 4
+
+log_path: /home/mint/ws_uav_setup/src/Coco-LIC-UWB/log
+
+sensors:
+  UWB:
+    is_available: 1
+    uwb_range_topic: /nlink_linktrack_nodeframe3
+    num_uwb: 7
+    # an array, the IDs of the UWB anchors (the last ID is the moving module to be localized)
+    AnchorId: [00, 01, 02, 03, 04, 05, 06, 07]
+    # an array, the postions (x, y, z) of the UWB anchors (the last three elements, is the initial postion of the moving module to be localized)
+    AnchorPos: [-8.1926, -8.1926, 2.77,
+                -11.5862, 0, 0.5, 
+                -8.1926, 8.1926, 2.77, 
+                0, 11.5862, 0.5, 
+                8.1926, 8.1926, 2.77, 
+                11.5862, 0, 0.5, 
+                8.1926, -8.1926, 2.77, 
+                0, -11.5862, 0.5]
+    # the antenna offset on the moving module, there may be multiple antennas. DONOT SET IT IF THERE IS NO OFFSET  
+    antennaOffset: [-0.2, 0, 0, 0.2, 0, 0, 0, -0.1]
+
+  IMU:
+    is_available: 0
+    imu_topic:  /livox/imu 
+    imu_excite_threshold: 0.5  # statical initialization, do not move!s
+    gravity_mag: 9.81
+    if_normalized: true  # imu acc is normalized in FAST-LIVO dataset
+    if_use_init_bg: false
+
+    IMUExtrinsics:  # imu to imu
+        time_offset: 0.000
+        Trans: [0, 0, 0]
+        Rot: [ 1, 0, 0,
+              0, 1, 0,
+              0, 0,  1]
+
+  LiDAR:
+    is_available: 0
+    topic: /livox/lidar
+    is_livox: true
+    Extrinsics:  # lidar to imu
+        time_offset: 0.000
+        Trans: [0.0, 0.0, 0.0]
+        Rot: [1, 0, 0,
+              0, 1, 0,
+              0, 0, 1]
+    num_lidars: 1
+    lidar_timestamp_end: false  # if the timestamp of a lidar scan is set at the end of the scan
+    ### FeatureExtraction ###
+    # if use Livox:  # Avia
+    n_scan: 6
+    blind: 0.0
+    group_size: 8
+    point_filter_num: 1
+    inf_bound: 4
+    disA: 0.01
+    disB: 0.1
+    limit_maxmid: 6.25
+    limit_midmin: 6.25
+    limit_maxmin: 3.24
+    p2l_ratio: 225
+    jump_up_limit: 170.0
+    jump_down_limit: 8.0
+    edgea: 2
+    edgeb: 0.1
+    smallp_intersect: 172.5
+    smallp_ratio: 1.2
+    edge_threshold: 1.0
+    surf_threshold: 0.1
+    odometry_surface_leaf_size: 0.2
+    min_distance: 1.0
+    max_distance: 100.0
+    
+    ### Odometry ###
+    use_corner_feature: false
+    current_scan_param:
+        corner_leaf_size: 0.3
+        surface_leaf_size: 0.3
+        edge_min_valid_num: 10
+        surf_min_valid_num: 100
+        correspondence_downsample: 2
+    keyframe_strategy:
+        angle_degree: 10
+        dist_meter: 1.0
+        time_second: 10
+    map_param:    
+        keyframe_search_radius: 35.0
+        keyframe_search_time: 10.0
+        keyframe_density: 0.5
+        cloud_reserved_time: -1  # [s]
+
+  Camera:
+    is_available: 0
+    if_compressed: false
+    image_topic: /camera/fisheye1/image_raw
+
+    image_width: 848 
+    image_height: 800 
+    cam_fx: 285.6425
+    cam_fy: 285.7369
+    cam_cx: 412.8582
+    cam_cy: 389.4398
+    cam_d0: -0.0101437997072935
+    cam_d1: 0.0490523688495159
+    cam_d2: -0.0467962883412838
+    cam_d3: 0.00911895092576742
+    cam_d4: 0.0
+
+
+    CameraExtrinsics:  # camera to imu
+        time_offset: 0.000
+        Trans: [-0.00855251, 0.00012551, -0.04601545]
+        Rot: [ -0.99998531,  -0.00306509,  0.00447121,
+                0.00305151,  -0.99999071 ,  -0.00304286, 
+                0.0044805,  -0.00302917,  0.99998537]
+
+
+### SplineParams ###
+t_add: 0.1  # [s] trajectory is updated every delta_t seconds, no adjustment needed
+distance0: 0.03  # [s] the time duration corresponding to the first 4 control points, no adjustment needed
+non_uniform: true  # true for non-uniform b-spline, false for uniform b-spline
+division_coarse: 1  # if it is uniform, decide how many control points to place in every delta_t seconds, must be a non-zero integer
+
+### OptimizationParams ###
+t_begin_add_cam: 5.0  # [s] visual constraints will be added after the system has been successfully initialized for a while
+lidar_iter: 2
+use_lidar_scale: true  # scale the lidar weight
+lidar_weight: 100.0
+image_weight: 4.0
+uwb_weight: 0.1
+
+# imu：BMI088（200Hz）
+# derived from data manual https://terra-1-g.djicdn.com/65c028cd298f4669a7f0e40e50ba1131/demo/avia/Livox%20AVIA%20User%20Manual_CHS.pdf
+gyroscope_noise_density: 3.45557556e-03
+gyroscope_random_walk: 2.617993833e-07                    
+accelerometer_noise_density: 2.425376259e-02
+accelerometer_random_walk: 1.96e-06         
+
+### EvalutaionParams ###
+is_evo_viral: false
