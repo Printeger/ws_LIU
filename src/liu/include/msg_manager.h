@@ -32,6 +32,8 @@
 #include "nlink_parser/LinktrackTagframe0.h"
 #include "sensor_interface.hpp"
 
+using SensorCallback = std::function<void()>;
+
 namespace sensor_fusion {
 
 class MsgManager {
@@ -98,8 +100,41 @@ class MsgManager {
     }
   }
 
-  //
+  inline void processMask(uint8_t sensor_mask, ros::NodeHandle &nh) {
+    for (int i = 0; i < 4; ++i) {
+      if ((sensor_mask >> i) & 0x01) {
+        auto type = static_cast<SensorType>(i);
+        if (type == 0) {
+          sub_uwb_ = nh.subscribe("config_.uwb_topic", 1000,
+                                  &MsgManager::UwbMsgHandle, this);
+        } else if (type == 1) {
+          sub_imu_ = nh.subscribe("config_.imu_topic", 1000,
+                                  &MsgManager::IMUMsgHandle, this);
+        } else if (type == 2) {
+          for (int j = 0; j < num_lidars_; ++j) {
+            if (lidar_types[j] == VLP) {
+              subs_vlp16_[j] = nh.subscribe(
+                  lidar_topics_[j], 1000,
+                  boost::bind(&MsgManager::VelodyneMsgHandle, this, _1, j));
+            } else if (lidar_types[j] == LIVOX) {
+              subs_livox_[j] = nh.subscribe(
+                  lidar_topics_[j], 1000,
+                  boost::bind(&MsgManager::LivoxMsgHandle, this, _1, j));
+            }
+          }
+        } else if (type == 3) {
+          sub_image_ = nh.subscribe("config_.image_topic", 1000,
+                                    &MsgManager::ImageMsgHandle, this);
+        }
+      }
+    }
+  }
+
   void RemoveBeginData(int64_t start_time, int64_t relative_start_time = 0);
+
+  void registerCallback(SensorType type, SensorCallback cb) {
+    callbacks_[type] = cb;
+  }
 
  private:
   void LoadBag(const YAML::Node &node);
@@ -198,17 +233,20 @@ class MsgManager {
   rosbag::Bag bag_;
   rosbag::View view_;
 
+  ros::Subscriber sub_uwb_;
   ros::Subscriber sub_imu_;
+  ros::Subscriber sub_image_;
   std::vector<ros::Subscriber> subs_vlp16_;
   std::vector<ros::Subscriber> subs_livox_;
-  ros::Subscriber sub_image_;
-  ros::Subscriber sub_uwb_;
+
   VelodyneFeatureExtraction::Ptr velodyne_feature_extraction_;
   LivoxFeatureExtraction::Ptr livox_feature_extraction_;
 
   ros::Publisher pub_img_;
-
+  uint8_t sensor_mask = 0;
   SensorConfig config_;
+
+  std::unordered_map<SensorType, SensorCallback> callbacks_;
 };
 
 }  // namespace sensor_fusion

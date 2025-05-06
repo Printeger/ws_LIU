@@ -19,8 +19,8 @@ MsgManager::MsgManager(const YAML::Node &node, ros::NodeHandle &nh)
   // OdometryMode odom_mode = OdometryMode(node["odometry_mode"].as<int>());
   auto mask_ = LoadConfig(node);
   OdometryMode odom_mode = selectOdometry(mask_);
-  processMask(mask_, nh);
-  // LoadBag(node);
+
+  LoadBag(node);
 }
 
 OdometryMode MsgManager::selectOdometry(uint8_t sensor_mask) {
@@ -43,10 +43,10 @@ OdometryMode MsgManager::selectOdometry(uint8_t sensor_mask) {
 }
 
 uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
-  sensor_mask = 0;
+  uint8_t mask = 0;
   if (node["sensors"]["UWB"]["is_available"].as<int>() == 1) {
     ROS_INFO("UWB available. ");
-    sensor_mask |= UWB_BIT;
+    mask |= UWB_BIT;
     config_.uwb.is_available = true;
     config_.uwb.uwb_range_topic =
         node["sensors"]["UWB"]["uwb_range_topic"].as<std::string>();
@@ -64,7 +64,7 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
   }
   if (node["sensors"]["IMU"]["is_available"].as<int>() == 1) {
     ROS_INFO("IMU available. ");
-    sensor_mask |= IMU_BIT;
+    mask |= IMU_BIT;
     config_.imu.is_available = true;
     config_.imu.imu_topic =
         node["sensors"]["IMU"]["imu_topic"].as<std::string>();
@@ -75,8 +75,236 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
     config_.imu.if_normalized =
         node["sensors"]["IMU"]["if_normalized"].as<bool>();
   }
+  if (node["sensors"]["LiDAR"]["is_available"].as<int>() == 1) {
+    ROS_INFO("LiDAR available. ");
+    mask |= LIDAR_BIT;
+    bool use_livox = false;
+    bool use_vlp = false;
+    config_.lidar.is_available = true;
+    config_.lidar.topic = node["sensors"]["LiDAR"]["topic"].as<std::string>();
+    config_.lidar.is_livox = node["sensors"]["LiDAR"]["is_livox"].as<bool>();
+    config_.lidar.num_lidars = node["sensors"]["LiDAR"]["num_lidars"].as<int>();
+    config_.lidar.lidar_timestamp_end =
+        node["sensors"]["LiDAR"]["lidar_timestamp_end"].as<bool>();
+    if (config_.lidar.is_livox) {
+      config_.lidar.n_scans = node["sensors"]["LiDAR"]["n_scans"].as<int>();
+      config_.lidar.blind = node["sensors"]["LiDAR"]["blind"].as<double>();
+      config_.lidar.group_size =
+          node["sensors"]["LiDAR"]["group_size"].as<double>();
+      config_.lidar.point_filter_num =
+          node["sensors"]["LiDAR"]["point_filter_num"].as<double>();
+      config_.lidar.inf_bound =
+          node["sensors"]["LiDAR"]["inf_bound"].as<double>();
+      config_.lidar.disA = node["sensors"]["LiDAR"]["disA"].as<double>();
+      config_.lidar.disB = node["sensors"]["LiDAR"]["disB"].as<double>();
+      config_.lidar.limit_maxmid =
+          node["sensors"]["LiDAR"]["limit_maxmid"].as<double>();
+      config_.lidar.limit_midmin =
+          node["sensors"]["LiDAR"]["limit_midmin"].as<double>();
+      config_.lidar.limit_maxmin =
+          node["sensors"]["LiDAR"]["limit_maxmin"].as<double>();
+      config_.lidar.p2l_ratio =
+          node["sensors"]["LiDAR"]["p2l_ratio"].as<double>();
+      config_.lidar.jump_up_limit =
+          node["sensors"]["LiDAR"]["jump_up_limit"].as<double>();
+      config_.lidar.jump_down_limit =
+          node["sensors"]["LiDAR"]["jump_down_limit"].as<double>();
+      config_.lidar.edgea = node["sensors"]["LiDAR"]["edgea"].as<double>();
+      config_.lidar.edgeb = node["sensors"]["LiDAR"]["edgeb"].as<double>();
+      config_.lidar.smallp_intersect =
+          node["sensors"]["LiDAR"]["smallp_intersect"].as<double>();
+      config_.lidar.smallp_ratio =
+          node["sensors"]["LiDAR"]["smallp_ratio"].as<double>();
+      config_.lidar.edge_threshold =
+          node["sensors"]["LiDAR"]["edge_threshold"].as<double>();
+      config_.lidar.surf_threshold =
+          node["sensors"]["LiDAR"]["surf_threshold"].as<double>();
+      config_.lidar.odometry_surface_leaf_size =
+          node["sensors"]["LiDAR"]["odometry_surface_leaf_size"].as<double>();
+      config_.lidar.min_distance =
+          node["sensors"]["LiDAR"]["min_distance"].as<double>();
+      config_.lidar.max_distance =
+          node["sensors"]["LiDAR"]["max_distance"].as<double>();
 
-  return sensor_mask;
+      lidar_types.push_back(LIVOX);
+      use_livox = true;
+    } else {
+      lidar_types.push_back(VLP);
+      use_vlp = true;
+    }
+    config_.lidar.use_corner_feature =
+        node["sensors"]["LiDAR"]["use_corner_feature"].as<bool>();
+    config_.lidar.corner_leaf_size =
+        node["sensors"]["LiDAR"]["current_scan_param"]["corner_leaf_size"]
+            .as<double>();
+    config_.lidar.surface_leaf_size =
+        node["sensors"]["LiDAR"]["current_scan_param"]["surface_leaf_size"]
+            .as<double>();
+    config_.lidar.edge_min_valid_num =
+        node["sensors"]["LiDAR"]["current_scan_param"]["edge_min_valid_num"]
+            .as<double>();
+    config_.lidar.surf_min_valid_num =
+        node["sensors"]["LiDAR"]["current_scan_param"]["surf_min_valid_num"]
+            .as<double>();
+    config_.lidar.correspondence_downsample =
+        node["sensors"]["LiDAR"]["current_scan_param"]
+            ["correspondence_downsample"]
+                .as<double>();
+    config_.lidar.angle_degree =
+        node["sensors"]["LiDAR"]["keyframe_strategy"]["angle_degree"]
+            .as<double>();
+    config_.lidar.dist_meter =
+        node["sensors"]["LiDAR"]["keyframe_strategy"]["dist_meter"]
+            .as<double>();
+    config_.lidar.time_second =
+        node["sensors"]["LiDAR"]["keyframe_strategy"]["time_second"]
+            .as<double>();
+    config_.lidar.keyframe_search_radius =
+        node["sensors"]["LiDAR"]["map_param"]["keyframe_search_radius"]
+            .as<double>();
+    config_.lidar.keyframe_search_time =
+        node["sensors"]["LiDAR"]["map_param"]["keyframe_search_time"]
+            .as<double>();
+    config_.lidar.keyframe_density =
+        node["sensors"]["LiDAR"]["map_param"]["keyframe_density"].as<double>();
+    config_.lidar.cloud_reserved_time =
+        node["sensors"]["LiDAR"]["map_param"]["cloud_reserved_time"]
+            .as<double>();
+
+    EP_LktoI_.emplace_back();
+    EP_LktoI_.back().Init(node["Extrinsics"]["Extrinsics"]);
+    for (int k = 0; k < num_lidars_; ++k) {
+      lidar_max_timestamps_.push_back(0);
+      Eigen::Matrix4d T_Lk_to_L0 = Eigen::Matrix4d::Identity();
+      if (k > 0) {
+        T_Lk_to_L0.block<3, 3>(0, 0) =
+            (EP_LktoI_[0].q.inverse() * EP_LktoI_[k].q).toRotationMatrix();
+        T_Lk_to_L0.block<3, 1>(0, 3) =
+            EP_LktoI_[0].q.inverse() * (EP_LktoI_[k].p - EP_LktoI_[0].p);
+      }
+      T_LktoL0_vec_.push_back(T_Lk_to_L0);
+    }
+    if (use_livox)
+      livox_feature_extraction_ =
+          std::make_shared<LivoxFeatureExtraction>(lidar_node);
+    if (use_vlp)
+      velodyne_feature_extraction_ =
+          std::make_shared<VelodyneFeatureExtraction>(lidar_node);
+  }
+  if (node["sensors"]["Camera"]["is_available"].as<int>() == 1) {
+    ROS_INFO("Camera available. ");
+    mask |= CAMERA_BIT;
+    config_.camera.is_available = true;
+    config_.camera.image_topic =
+        node["sensors"]["Camera"]["image_topic"].as<std::string>();
+    config_.camera.if_compressed =
+        node["sensors"]["Camera"]["if_compressed"].as<bool>();
+  }
+  return mask;
+}
+
+void MsgManager::LoadBag(const YAML::Node &node) {
+  double bag_start = node["bag_start"].as<double>();
+  double bag_durr = node["bag_durr"].as<double>();
+
+  std::vector<std::string> topics;
+  topics.push_back(imu_topic_);  // imu
+  if (use_image_)                // camera
+    topics.push_back(image_topic_);
+  for (auto &v : lidar_topics_)  // lidar
+    topics.push_back(v);
+  // topics.push_back(pose_topic_);
+  topics.push_back(uwb_topic_);
+
+  bag_.open(bag_path_, rosbag::bagmode::Read);
+
+  rosbag::View view_full;
+  view_full.addQuery(bag_);
+  ros::Time time_start = view_full.getBeginTime();
+  time_start += ros::Duration(bag_start);
+  ros::Time time_finish = (bag_durr < 0) ? view_full.getEndTime()
+                                         : time_start + ros::Duration(bag_durr);
+  view_.addQuery(bag_, rosbag::TopicQuery(topics), time_start, time_finish);
+  if (view_.size() == 0) {
+    ROS_ERROR("No messages to play on specified topics.  Exiting.");
+    ros::shutdown();
+    return;
+  }
+
+  std::cout << "\n🍺 LoadBag " << bag_path_ << " start at " << bag_start
+            << " with duration " << (time_finish - time_start).toSec() << ".\n";
+  LOG(INFO) << "LoadBag " << bag_path_ << " start at " << bag_start
+            << " with duration " << (time_finish - time_start).toSec();
+}
+
+void MsgManager::SpinBagOnce() {
+  static rosbag::View::iterator view_iterator = view_.begin();
+  if (view_iterator == view_.end()) {
+    has_valid_msg_ = false;
+    LOG(INFO) << "End of bag";
+    return;
+  }
+
+  const rosbag::MessageInstance &m = *view_iterator;
+  std::string msg_topic = m.getTopic();
+  auto msg_time = m.getTime();
+
+  if (msg_topic == imu_topic_)  // imu
+  {
+    sensor_msgs::Imu::ConstPtr imu_msg = m.instantiate<sensor_msgs::Imu>();
+    IMUMsgHandle(imu_msg);
+  } else if (std::find(lidar_topics_.begin(), lidar_topics_.end(), msg_topic) !=
+             lidar_topics_.end())  // lidar
+  {
+    auto it = std::find(lidar_topics_.begin(), lidar_topics_.end(), msg_topic);
+    auto idx = std::distance(lidar_topics_.begin(), it);
+    if (lidar_types[idx] == VLP)  //[rotating lidar: Velodyne、Ouster、Hesai]
+    {
+      if (!m.isType<sensor_msgs::PointCloud2>()) std::cout << "Wrong type\n";
+
+      auto lidar_msg = m.instantiate<sensor_msgs::PointCloud2>();
+      CheckLidarMsgTimestamp(msg_time.toSec(), lidar_msg->header.stamp.toSec());
+      VelodyneMsgHandle(lidar_msg, idx);
+      // VelodyneMsgHandleNoFeature(lidar_msg, idx);
+    } else if (lidar_types[idx] == LIVOX)  //[solid-state lidar: Livox]
+    {
+      if (!m.isType<livox_ros_driver2::CustomMsg>())
+        std::cout << "Wrong type\n";
+
+      auto lidar_msg = m.instantiate<livox_ros_driver2::CustomMsg>();
+      CheckLidarMsgTimestamp(msg_time.toSec(), lidar_msg->header.stamp.toSec());
+      LivoxMsgHandle(lidar_msg, idx);  // Extract features & put in LiDAR buffer
+    }
+  } else if (msg_topic == image_topic_)  // camera
+  {
+    if (if_compressed_) {
+      sensor_msgs::CompressedImageConstPtr image_msg =
+          m.instantiate<sensor_msgs::CompressedImage>();
+      ImageMsgHandle(image_msg);
+    } else {
+      sensor_msgs::ImageConstPtr image_msg =
+          m.instantiate<sensor_msgs::Image>();
+      ImageMsgHandle(image_msg);
+    }
+  } else if (msg_topic == uwb_topic_) {
+    std::string uwb_topic_1 = "/nlink_linktrack_tagframe0";
+    std::string uwb_topic_2 = "/nlink_linktrack_nodeframe3";
+    if (uwb_topic_ == uwb_topic_1) {
+      auto uwb_msg = m.instantiate<nlink_parser::LinktrackTagframe0>();
+      UwbMsgHandle(uwb_msg);
+      if (uwb_buf_.empty()) {
+        LOG(ERROR) << "UWB buf empty ";
+      }
+    } else if (uwb_topic_ == uwb_topic_2) {
+      auto uwb_msg = m.instantiate<nlink_parser::LinktrackNodeframe3>();
+      UwbMsgHandle(uwb_msg);
+      if (uwb_buf_.empty()) {
+        LOG(ERROR) << "UWB buf empty ";
+      }
+    }
+  }
+
+  view_iterator++;
 }
 
 void MsgManager::LogInfo() const {

@@ -5,7 +5,10 @@
 #include "include/FaultDetector.h"
 #include "include/KalmanFilter.h"
 #include "include/TimeSynchronizer.h"
+#include "include/msg_manager.h"
 #include "include/sensor_interface.hpp"
+
+using namespace sensor_fusion;
 
 int main(int argc, char** argv) {
   // 初始化系统
@@ -20,14 +23,13 @@ int main(int argc, char** argv) {
   ROS_INFO("Odometry load %s.", config_path.c_str());
   YAML::Node config_node = YAML::LoadFile(config_path);
 
-  // 创建传感器实例
-  std::vector<SensorDriver*> sensors;
-  for (const auto& type : sensor_types) {
-    if (auto* sensor = SensorFactory::createSensor(type)) {
-      sensor->initialize(config_file);
-      sensors.push_back(sensor);
-      LOG(INFO) << "Initialized sensor: " << type;
-    }
+  MsgManager msg_manager(config_node, nh);
+  msg_manager.processMask(msg_manager.sensor_mask, nh);
+
+  if ((sensor_mask >> UWB_INDEX) & 0x01) {
+    // 构造或获取UWB消息
+    auto uwb_msg = ...;
+    msg_manager.UwbMsgHandle(uwb_msg);
   }
 
   // 初始化核心模块

@@ -31,6 +31,11 @@ enum SensorMask : uint8_t {
   CAMERA_BIT = 0b00001000,  // 3：Camera
 };
 
+enum SensorType { UWB = 0, IMU = 1, LIDAR = 2, CAMERA = 3 };
+
+std::unordered_map<SensorType, std::string> sensor_type_names = {
+    {UWB, "UWB"}, {IMU, "IMU"}, {LIDAR, "LiDAR"}, {CAMERA, "Camera"}};
+
 enum OdometryMode {
   UO = 0,     // UWB Odometry
   IUO = 1,    // UWB Inertial Odometry
@@ -201,84 +206,14 @@ struct NextMsgs {
   UwbData uwb_msg;
 };
 
-/**
- * @brief 传感器接口抽象基类
- *
- * 所有具体传感器类必须实现此接口
- */
-template <typename T>
-class ISensor {
- public:
-  virtual void registerMsgCallback(const std::function<void(const T&)>& cb) = 0;
+struct UwbData {
+  UwbData() : timestamp(0), is_time_wrt_traj_start(false) {}
 
-  virtual ~ISensor() = default;
-
-  /**
-   * @brief 初始化传感器
-   * @param config YAML配置节点
-   * @return 是否初始化成功
-   */
-  virtual bool initialize(const YAML::Node& config) = 0;
-
-  /**
-   * @brief 启动传感器数据接收
-   * @return 是否成功启动
-   */
-  virtual bool start() = 0;
-
-  /**
-   * @brief 停止传感器数据接收
-   * @return 是否成功停止
-   */
-  virtual bool stop() = 0;
-
-  /**
-   * @brief 获取传感器名称
-   * @return 传感器名称
-   */
-  virtual std::string getName() const = 0;
-
-  /**
-   * @brief 获取传感器类型
-   * @return 传感器类型枚举
-   */
-  virtual SensorType getType() const = 0;
-
-  /**
-   * @brief 检查传感器是否有效
-   * @return 传感器是否有效
-   */
-  virtual bool isValid() const = 0;
-
-  /**
-   * @brief 获取最新传感器数据
-   * @return 最新的传感器数据
-   */
-  virtual SensorData getLatestData() const = 0;
-};
-
-/**
- * @brief 传感器工厂类
- *
- * 负责创建具体的传感器实例
- */
-class SensorFactory {
- public:
-  static std::shared_ptr<ISensor> create(const std::string& type,
-                                         const YAML::Node& config) {
-    if (type == "IMU") return std::make_shared<ImuSensor>(config);
-    if (type == "LiDAR") return std::make_shared<LidarSensor>(config);
-    if (type == "Camera") return std::make_shared<CameraSensor>(config);
-    if (type == "GPS") return std::make_shared<GpsSensor>(config);
-    if (type == "UWB") return std::make_shared<UwbSensor>(config);  // 预留
-    throw std::runtime_error("Unknown sensor type");
+  void ToRelativeMeasureTime(int64_t traj_start_time) {
+    // LOG(INFO) << "UwbData Time: " << timestamp << " " << traj_start_time;
+    timestamp -= traj_start_time;
+    is_time_wrt_traj_start = true;
   }
-};
-
-class UwbSensor : public ISensor {
- private:
-  std::string topic_;
-  ros::Subscriber sub_;
   int64_t timestamp;
   int64_t anchor_num;
   int64_t tag_num;
@@ -286,36 +221,6 @@ class UwbSensor : public ISensor {
   std::unordered_map<int, double> anchor_distances;
   Eigen::Vector3d tag_position;
   bool is_time_wrt_traj_start;
-  float fp_rssi;  // 第一路径信号强度
-  float rx_rssi;  // 总接收信号强度
-  // “rx_rssi - fp_rssi”小于6dB 时，很有可能处于视距（LOS）状态；
-  // 当大于10dB时，很有可能处于非视距（NLOS）或多径状态，
-
-  void uwbCallback(const UWBType::ConstPtr msg) {}
-
-  /**
-   * @brief 加载传感器配置
-   * @param config YAML配置节点
-   */
-  void loadConfig(const YAML::Node& config);
-
-  std::string name_;  ///< 传感器名称
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr
-      imu_sub_;                    ///< IMU订阅器
-  SensorData latest_data_;         ///< 最新传感器数据
-  mutable std::mutex data_mutex_;  ///< 数据互斥锁
-  bool initialized_ = false;       ///< 初始化状态标志
-  int64_t last_timestamp_ = 0;     ///< 上次数据时间戳
-
- public:
-  explicit ImuSensor(const rclcpp::NodeOptions& options);
-  ~ImuSensor() override;
-  bool initialize(const YAML::Node& config) override;
-  bool start() override;
-  bool stop() override;
-  std::string getName() const override { return name_; }
-  SensorType getType() const override { return SensorType::UWB; }
-  bool isValid() const override;
 };
 
 }  // namespace sensor_fusion
