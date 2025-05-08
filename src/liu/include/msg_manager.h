@@ -31,6 +31,7 @@
 #include "nlink_parser/LinktrackTagframe0.h"
 #include "sensor_interface.hpp"
 
+using namespace cocolic;
 using SensorCallback = std::function<void()>;
 
 namespace sensor_fusion {
@@ -104,10 +105,10 @@ class MsgManager {
       if ((sensor_mask >> i) & 0x01) {
         auto type = static_cast<SensorType>(i);
         if (type == 0) {
-          sub_uwb_ = nh.subscribe("config_.uwb_topic", 1000,
+          sub_uwb_ = nh.subscribe(config_.uwb.uwb_range_topic, 1000,
                                   &MsgManager::UwbMsgHandle, this);
         } else if (type == 1) {
-          sub_imu_ = nh.subscribe("config_.imu_topic", 1000,
+          sub_imu_ = nh.subscribe(config_.imu.imu_topic, 1000,
                                   &MsgManager::IMUMsgHandle, this);
         } else if (type == 2) {
           // for (int j = 0; j < num_lidars_; ++j) {
@@ -141,29 +142,32 @@ class MsgManager {
   bool HasEnvMsg() const;
 
   //
-  bool CheckMsgIsReady(double traj_max, double start_time, double knot_dt,
-                       bool in_scan_unit) const;
+  // bool CheckMsgIsReady(double traj_max, double start_time, double knot_dt,
+  //                      bool in_scan_unit) const;
 
-  bool AddImageToMsg(NextMsgs &msgs, const ImageData &image, int64_t traj_max);
+  // bool AddImageToMsg(NextMsgs &msgs, const ImageData &image, int64_t
+  // traj_max);
 
-  //
-  bool AddToMsg(NextMsgs &msgs, std::deque<LiDARCloudData>::iterator scan,
-                int64_t traj_max);
+  // //
+  // bool AddToMsg(NextMsgs &msgs, std::deque<LiDARCloudData>::iterator scan,
+  //               int64_t traj_max);
 
   void IMUMsgHandle(const sensor_msgs::Imu::ConstPtr &imu_msg);
 
-  void VelodyneMsgHandle(const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg,
-                         int lidar_id);
-  void VelodyneMsgHandleNoFeature(
-      const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id);
+  // void VelodyneMsgHandle(const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg,
+  //                        int lidar_id);
+  // void VelodyneMsgHandleNoFeature(
+  //     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id);
 
-  void LivoxMsgHandle(const livox_ros_driver2::CustomMsg::ConstPtr &livox_msg,
-                      int lidar_id);
+  // void LivoxMsgHandle(const livox_ros_driver2::CustomMsg::ConstPtr
+  // &livox_msg,
+  //                     int lidar_id);
 
   void ImageMsgHandle(const sensor_msgs::ImageConstPtr &msg);
   void ImageMsgHandle(const sensor_msgs::CompressedImageConstPtr &msg);
 
-  void UwbMsgHandle(const nlink_parser::LinktrackTagframe0::ConstPtr &uwb_msg);
+  // void UwbMsgHandle(const nlink_parser::LinktrackTagframe0::ConstPtr
+  // &uwb_msg);
   void UwbMsgHandle(const nlink_parser::LinktrackNodeframe3::ConstPtr &uwb_msg);
 
   void GetUWBPosInit(UwbData &measurements);
@@ -188,10 +192,10 @@ class MsgManager {
   double t_image_ms_;
   double t_lidar_ms_;
 
-  std::deque<ImageData> image_buf_;
+  // std::deque<ImageData> image_buf_;
   std::vector<int64_t> nerf_time_;
   Eigen::aligned_deque<IMUData> imu_buf_;
-  std::deque<LiDARCloudData> lidar_buf_;
+  // std::deque<LiDARCloudData> lidar_buf_;
   std::deque<UwbData> uwb_buf_;
   std::vector<int64_t> lidar_max_timestamps_;
   int64_t image_max_timestamp_;

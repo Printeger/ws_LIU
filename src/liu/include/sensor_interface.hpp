@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
@@ -16,8 +17,10 @@
 #include <string>
 #include <unordered_map>
 
+#include "../src/utils/cloud_tool.h"
 #include "nlink_parser/LinktrackNodeframe3.h"
-#include "nlink_parser/LinktrackTagframe0.h"
+
+using namespace cocolic;
 
 typedef nlink_parser::LinktrackNodeframe3 UWBType;
 
@@ -133,6 +136,28 @@ enum LiDARType {
   LIVOX,
 };
 
+struct UwbData {
+  UwbData() : timestamp(0), is_time_wrt_traj_start(false) {}
+
+  void ToRelativeMeasureTime(int64_t traj_start_time) {
+    // LOG(INFO) << "UwbData Time: " << timestamp << " " << traj_start_time;
+    timestamp -= traj_start_time;
+    is_time_wrt_traj_start = true;
+  }
+
+  int64_t timestamp;
+  int64_t anchor_num;
+  int64_t tag_num;
+  std::unordered_map<int, Eigen::Vector3d> anchor_positions;
+  std::unordered_map<int, double> anchor_distances;
+  Eigen::Vector3d tag_position;
+  bool is_time_wrt_traj_start;
+  float fp_rssi;  // 第一路径信号强度
+  float rx_rssi;  // 总接收信号强度
+  // “rx_rssi - fp_rssi”小于6dB 时，很有可能处于视距（LOS）状态；
+  // 当大于10dB时，很有可能处于非视距（NLOS）或多径状态，
+};
+
 struct NextMsgs {
   NextMsgs()
       : scan_num(0),
@@ -197,23 +222,6 @@ struct NextMsgs {
   Eigen::Vector3d uwb_position;
   // nlink_parser::LinktrackTagframe0 uwb_msg;
   UwbData uwb_msg;
-};
-
-struct UwbData {
-  UwbData() : timestamp(0), is_time_wrt_traj_start(false) {}
-
-  void ToRelativeMeasureTime(int64_t traj_start_time) {
-    // LOG(INFO) << "UwbData Time: " << timestamp << " " << traj_start_time;
-    timestamp -= traj_start_time;
-    is_time_wrt_traj_start = true;
-  }
-  int64_t timestamp;
-  int64_t anchor_num;
-  int64_t tag_num;
-  std::unordered_map<int, Eigen::Vector3d> anchor_positions;
-  std::unordered_map<int, double> anchor_distances;
-  Eigen::Vector3d tag_position;
-  bool is_time_wrt_traj_start;
 };
 
 }  // namespace sensor_fusion

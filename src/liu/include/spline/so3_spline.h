@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iomanip>
 
 #include "../../src/utils/sophus_utils.hpp"
-#include "../sophus_lib/so3.hpp>
+#include "../sophus_lib/so3.hpp"
 #include "assert.h"
 #include "spline_common.h"
 

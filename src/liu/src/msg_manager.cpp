@@ -81,356 +81,362 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
   return sensor_mask;
 }
 
-void MsgManager::LogInfo() const {
-  int m_size[3] = {0, 0, 0};
-  m_size[0] = imu_buf_.size();
-  m_size[1] = lidar_buf_.size();
-  // if (use_image_) m_size[2] = feature_tracker_node_->NumImageMsg();
-  LOG(INFO) << "imu/lidar/image msg left: " << m_size[0] << "/" << m_size[1]
-            << "/" << m_size[2];
-}
+// void MsgManager::LogInfo() const {
+//   int m_size[3] = {0, 0, 0};
+//   m_size[0] = imu_buf_.size();
+//   m_size[1] = lidar_buf_.size();
+//   // if (use_image_) m_size[2] = feature_tracker_node_->NumImageMsg();
+//   LOG(INFO) << "imu/lidar/image msg left: " << m_size[0] << "/" << m_size[1]
+//             << "/" << m_size[2];
+// }
 
-void MsgManager::RemoveBeginData(int64_t start_time,             // not used
-                                 int64_t relative_start_time) {  // 0
-  for (auto iter = lidar_buf_.begin(); iter != lidar_buf_.end();) {
-    if (iter->timestamp < relative_start_time) {
-      if (iter->max_timestamp <= relative_start_time) {  // [1]
-        iter = lidar_buf_.erase(iter);
-        continue;
-      } else {  // [2]
-        // int64_t t_aft = relative_start_time + 1e-3;  //1e-3
-        int64_t t_aft = relative_start_time;
-        LiDARCloudData scan_bef, scan_aft;
-        scan_aft.timestamp = t_aft;
-        scan_aft.max_timestamp = iter->max_timestamp;
-        pcl::FilterCloudByTimestamp(iter->raw_cloud, t_aft, scan_bef.raw_cloud,
-                                    scan_aft.raw_cloud);
-        pcl::FilterCloudByTimestamp(iter->surf_cloud, t_aft,
-                                    scan_bef.surf_cloud, scan_aft.surf_cloud);
-        pcl::FilterCloudByTimestamp(iter->corner_cloud, t_aft,
-                                    scan_bef.corner_cloud,
-                                    scan_aft.corner_cloud);
+// void MsgManager::RemoveBeginData(int64_t start_time,             // not used
+//                                  int64_t relative_start_time) {  // 0
+//   for (auto iter = lidar_buf_.begin(); iter != lidar_buf_.end();) {
+//     if (iter->timestamp < relative_start_time) {
+//       if (iter->max_timestamp <= relative_start_time) {  // [1]
+//         iter = lidar_buf_.erase(iter);
+//         continue;
+//       } else {  // [2]
+//         // int64_t t_aft = relative_start_time + 1e-3;  //1e-3
+//         int64_t t_aft = relative_start_time;
+//         LiDARCloudData scan_bef, scan_aft;
+//         scan_aft.timestamp = t_aft;
+//         scan_aft.max_timestamp = iter->max_timestamp;
+//         pcl::FilterCloudByTimestamp(iter->raw_cloud, t_aft,
+//         scan_bef.raw_cloud,
+//                                     scan_aft.raw_cloud);
+//         pcl::FilterCloudByTimestamp(iter->surf_cloud, t_aft,
+//                                     scan_bef.surf_cloud,
+//                                     scan_aft.surf_cloud);
+//         pcl::FilterCloudByTimestamp(iter->corner_cloud, t_aft,
+//                                     scan_bef.corner_cloud,
+//                                     scan_aft.corner_cloud);
 
-        iter->timestamp = t_aft;
-        *iter->raw_cloud = *scan_aft.raw_cloud;
-        *iter->surf_cloud = *scan_aft.surf_cloud;
-        *iter->corner_cloud = *scan_aft.corner_cloud;
-      }
-    }
+//         iter->timestamp = t_aft;
+//         *iter->raw_cloud = *scan_aft.raw_cloud;
+//         *iter->surf_cloud = *scan_aft.surf_cloud;
+//         *iter->corner_cloud = *scan_aft.corner_cloud;
+//       }
+//     }
 
-    iter++;
-  }
+//     iter++;
+//   }
 
-  if (use_image_) {
-    for (auto iter = image_buf_.begin(); iter != image_buf_.end();) {
-      if (iter->timestamp < relative_start_time) {
-        iter = image_buf_.erase(iter);  //
-        continue;
-      }
-      iter++;
-    }
-  }
-  for (auto iter = uwb_buf_.begin(); iter != uwb_buf_.end();) {
-    if (iter->timestamp < relative_start_time) {
-      iter = uwb_buf_.erase(iter);  //
-      LOG(INFO) << "Remove begin uwb data";
-      continue;
-    }
-    iter++;
-  }
-}
+//   if (use_image_) {
+//     for (auto iter = image_buf_.begin(); iter != image_buf_.end();) {
+//       if (iter->timestamp < relative_start_time) {
+//         iter = image_buf_.erase(iter);  //
+//         continue;
+//       }
+//       iter++;
+//     }
+//   }
+//   for (auto iter = uwb_buf_.begin(); iter != uwb_buf_.end();) {
+//     if (iter->timestamp < relative_start_time) {
+//       iter = uwb_buf_.erase(iter);  //
+//       LOG(INFO) << "Remove begin uwb data";
+//       continue;
+//     }
+//     iter++;
+//   }
+// }
 
-bool MsgManager::HasEnvMsg() const {
-  int env_msg = lidar_buf_.size();
-  if (cur_imu_timestamp_ < 0 && env_msg > 100)
-    LOG(WARNING) << "No IMU data. CHECK imu topic" << imu_topic_;
+// bool MsgManager::HasEnvMsg() const {
+//   int env_msg = lidar_buf_.size();
+//   if (cur_imu_timestamp_ < 0 && env_msg > 100)
+//     LOG(WARNING) << "No IMU data. CHECK imu topic" << imu_topic_;
 
-  return env_msg > 0;
-}
+//   return env_msg > 0;
+// }
 
-bool MsgManager::CheckMsgIsReady(double traj_max, double start_time,
-                                 double knot_dt, bool in_scan_unit) const {
-  double t_imu_wrt_start = cur_imu_timestamp_ - start_time;
+// bool MsgManager::CheckMsgIsReady(double traj_max, double start_time,
+//                                  double knot_dt, bool in_scan_unit) const {
+//   double t_imu_wrt_start = cur_imu_timestamp_ - start_time;
 
-  //
-  if (t_imu_wrt_start < traj_max) {
-    return false;
-  }
+//   //
+//   if (t_imu_wrt_start < traj_max) {
+//     return false;
+//   }
 
-  //
-  int64_t t_front_lidar = -1;
-  // Count how many unique lidar streams
-  std::vector<int> unique_lidar_ids;
-  for (const auto &data : lidar_buf_) {
-    if (std::find(unique_lidar_ids.begin(), unique_lidar_ids.end(),
-                  data.lidar_id) != unique_lidar_ids.end())
-      continue;
-    unique_lidar_ids.push_back(data.lidar_id);
+//   //
+//   int64_t t_front_lidar = -1;
+//   // Count how many unique lidar streams
+//   std::vector<int> unique_lidar_ids;
+//   for (const auto &data : lidar_buf_) {
+//     if (std::find(unique_lidar_ids.begin(), unique_lidar_ids.end(),
+//                   data.lidar_id) != unique_lidar_ids.end())
+//       continue;
+//     unique_lidar_ids.push_back(data.lidar_id);
 
-    //
-    t_front_lidar = std::max(t_front_lidar, data.max_timestamp);
-  }
+//     //
+//     t_front_lidar = std::max(t_front_lidar, data.max_timestamp);
+//   }
 
-  //
-  if ((int)unique_lidar_ids.size() != num_lidars_) return false;
+//   //
+//   if ((int)unique_lidar_ids.size() != num_lidars_) return false;
 
-  //
-  int64_t t_back_lidar = lidar_max_timestamps_[0];
-  for (auto t : lidar_max_timestamps_) {
-    t_back_lidar = std::min(t_back_lidar, t);
-  }
+//   //
+//   int64_t t_back_lidar = lidar_max_timestamps_[0];
+//   for (auto t : lidar_max_timestamps_) {
+//     t_back_lidar = std::min(t_back_lidar, t);
+//   }
 
-  //
-  if (in_scan_unit) {
-    //
-    if (t_front_lidar > t_imu_wrt_start) return false;
-  } else {
-    //
-    if (t_back_lidar < traj_max) return false;
-  }
+//   //
+//   if (in_scan_unit) {
+//     //
+//     if (t_front_lidar > t_imu_wrt_start) return false;
+//   } else {
+//     //
+//     if (t_back_lidar < traj_max) return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
-bool MsgManager::AddImageToMsg(NextMsgs &msgs, const ImageData &image,
-                               int64_t traj_max) {
-  if (image.timestamp >= traj_max) return false;
-  msgs.if_have_image = true;  // important!
-  msgs.image_timestamp = image.timestamp;
-  msgs.image = image.image;
-  // msgs.image = image.image.clone();
-  return true;
-}
+// bool MsgManager::AddImageToMsg(NextMsgs &msgs, const ImageData &image,
+//                                int64_t traj_max) {
+//   if (image.timestamp >= traj_max) return false;
+//   msgs.if_have_image = true;  // important!
+//   msgs.image_timestamp = image.timestamp;
+//   msgs.image = image.image;
+//   // msgs.image = image.image.clone();
+//   return true;
+// }
 
-bool MsgManager::AddToMsg(NextMsgs &msgs,
-                          std::deque<LiDARCloudData>::iterator scan,
-                          int64_t traj_max) {
-  bool add_entire_scan = false;
-  // if (scan->timestamp > traj_max) return add_entire_scan;
+// bool MsgManager::AddToMsg(NextMsgs &msgs,
+//                           std::deque<LiDARCloudData>::iterator scan,
+//                           int64_t traj_max) {
+//   bool add_entire_scan = false;
+//   // if (scan->timestamp > traj_max) return add_entire_scan;
 
-  if (scan->max_timestamp < traj_max) {  //
-    *msgs.lidar_raw_cloud += (*scan->raw_cloud);
-    *msgs.lidar_surf_cloud += (*scan->surf_cloud);
-    *msgs.lidar_corner_cloud += (*scan->corner_cloud);
+//   if (scan->max_timestamp < traj_max) {  //
+//     *msgs.lidar_raw_cloud += (*scan->raw_cloud);
+//     *msgs.lidar_surf_cloud += (*scan->surf_cloud);
+//     *msgs.lidar_corner_cloud += (*scan->corner_cloud);
 
-    //
-    if (msgs.scan_num == 0) {
-      // first scan
-      msgs.lidar_timestamp = scan->timestamp;
-      msgs.lidar_max_timestamp = scan->max_timestamp;
-    } else {
-      msgs.lidar_timestamp = std::min(msgs.lidar_timestamp, scan->timestamp);
-      msgs.lidar_max_timestamp =
-          std::max(msgs.lidar_max_timestamp, scan->max_timestamp);
-    }
+//     //
+//     if (msgs.scan_num == 0) {
+//       // first scan
+//       msgs.lidar_timestamp = scan->timestamp;
+//       msgs.lidar_max_timestamp = scan->max_timestamp;
+//     } else {
+//       msgs.lidar_timestamp = std::min(msgs.lidar_timestamp, scan->timestamp);
+//       msgs.lidar_max_timestamp =
+//           std::max(msgs.lidar_max_timestamp, scan->max_timestamp);
+//     }
 
-    add_entire_scan = true;
-  } else {  //
-    LiDARCloudData scan_bef, scan_aft;
-    pcl::FilterCloudByTimestamp(scan->raw_cloud, traj_max, scan_bef.raw_cloud,
-                                scan_aft.raw_cloud);
-    pcl::FilterCloudByTimestamp(scan->surf_cloud, traj_max, scan_bef.surf_cloud,
-                                scan_aft.surf_cloud);
-    pcl::FilterCloudByTimestamp(scan->corner_cloud, traj_max,
-                                scan_bef.corner_cloud, scan_aft.corner_cloud);
-    //
-    scan_bef.timestamp = scan->timestamp;
-    scan_bef.max_timestamp = traj_max - 1e-9 * S_TO_NS;
-    scan_aft.timestamp = traj_max;
-    scan_aft.max_timestamp = scan->max_timestamp;
+//     add_entire_scan = true;
+//   } else {  //
+//     LiDARCloudData scan_bef, scan_aft;
+//     pcl::FilterCloudByTimestamp(scan->raw_cloud, traj_max,
+//     scan_bef.raw_cloud,
+//                                 scan_aft.raw_cloud);
+//     pcl::FilterCloudByTimestamp(scan->surf_cloud, traj_max,
+//     scan_bef.surf_cloud,
+//                                 scan_aft.surf_cloud);
+//     pcl::FilterCloudByTimestamp(scan->corner_cloud, traj_max,
+//                                 scan_bef.corner_cloud,
+//                                 scan_aft.corner_cloud);
+//     //
+//     scan_bef.timestamp = scan->timestamp;
+//     scan_bef.max_timestamp = traj_max - 1e-9 * S_TO_NS;
+//     scan_aft.timestamp = traj_max;
+//     scan_aft.max_timestamp = scan->max_timestamp;
 
-    //
-    scan->timestamp = traj_max;
-    // *scan.max_timestamp = ； //
-    *scan->raw_cloud = *scan_aft.raw_cloud;
-    *scan->surf_cloud = *scan_aft.surf_cloud;
-    *scan->corner_cloud = *scan_aft.corner_cloud;
+//     //
+//     scan->timestamp = traj_max;
+//     // *scan.max_timestamp = ； //
+//     *scan->raw_cloud = *scan_aft.raw_cloud;
+//     *scan->surf_cloud = *scan_aft.surf_cloud;
+//     *scan->corner_cloud = *scan_aft.corner_cloud;
 
-    *msgs.lidar_raw_cloud += (*scan_bef.raw_cloud);
-    *msgs.lidar_surf_cloud += (*scan_bef.surf_cloud);
-    *msgs.lidar_corner_cloud += (*scan_bef.corner_cloud);
+//     *msgs.lidar_raw_cloud += (*scan_bef.raw_cloud);
+//     *msgs.lidar_surf_cloud += (*scan_bef.surf_cloud);
+//     *msgs.lidar_corner_cloud += (*scan_bef.corner_cloud);
 
-    //
-    if (msgs.scan_num == 0) {
-      // first scan
-      msgs.lidar_timestamp = scan_bef.timestamp;
-      msgs.lidar_max_timestamp = scan_bef.max_timestamp;
-    } else {
-      msgs.lidar_timestamp = std::min(msgs.lidar_timestamp, scan_bef.timestamp);
-      msgs.lidar_max_timestamp =
-          std::max(msgs.lidar_max_timestamp, scan_bef.max_timestamp);
-    }
+//     //
+//     if (msgs.scan_num == 0) {
+//       // first scan
+//       msgs.lidar_timestamp = scan_bef.timestamp;
+//       msgs.lidar_max_timestamp = scan_bef.max_timestamp;
+//     } else {
+//       msgs.lidar_timestamp = std::min(msgs.lidar_timestamp,
+//       scan_bef.timestamp); msgs.lidar_max_timestamp =
+//           std::max(msgs.lidar_max_timestamp, scan_bef.max_timestamp);
+//     }
 
-    add_entire_scan = false;
-  }
+//     add_entire_scan = false;
+//   }
 
-  //
-  msgs.scan_num++;
+//   //
+//   msgs.scan_num++;
 
-  return add_entire_scan;
-}
+//   return add_entire_scan;
+// }
 
 ///
-bool MsgManager::GetMsgs(NextMsgs &msgs, int64_t traj_last_max,
-                         int64_t traj_max, int64_t start_time) {
-  msgs.Clear();
+// bool MsgManager::GetMsgs(NextMsgs &msgs, int64_t traj_last_max,
+//                          int64_t traj_max, int64_t start_time) {
+//   msgs.Clear();
 
-  if (imu_buf_.empty() || lidar_buf_.empty()) {
-    return false;
-  }
-  if (cur_imu_timestamp_ - start_time < traj_max) {
-    return false;
-  }
+//   if (imu_buf_.empty() || lidar_buf_.empty()) {
+//     return false;
+//   }
+//   if (cur_imu_timestamp_ - start_time < traj_max) {
+//     return false;
+//   }
 
-  /// 1
-  //
-  std::vector<int> unique_lidar_ids;
-  for (const auto &data : lidar_buf_) {
-    if (std::find(unique_lidar_ids.begin(), unique_lidar_ids.end(),
-                  data.lidar_id) != unique_lidar_ids.end())
-      continue;
-    unique_lidar_ids.push_back(data.lidar_id);
-  }
-  if (unique_lidar_ids.size() != num_lidars_) {
-    return false;
-  }
-  //
-  for (auto t : lidar_max_timestamps_) {
-    if (t < traj_max) {
-      return false;
-    }
-  }
-  //
-  if (use_image_) {
-    if (image_max_timestamp_ < traj_max) {
-      return false;
-    }
-  }
+//   /// 1
+//   //
+//   std::vector<int> unique_lidar_ids;
+//   for (const auto &data : lidar_buf_) {
+//     if (std::find(unique_lidar_ids.begin(), unique_lidar_ids.end(),
+//                   data.lidar_id) != unique_lidar_ids.end())
+//       continue;
+//     unique_lidar_ids.push_back(data.lidar_id);
+//   }
+//   if (unique_lidar_ids.size() != num_lidars_) {
+//     return false;
+//   }
+//   //
+//   for (auto t : lidar_max_timestamps_) {
+//     if (t < traj_max) {
+//       return false;
+//     }
+//   }
+//   //
+//   if (use_image_) {
+//     if (image_max_timestamp_ < traj_max) {
+//       return false;
+//     }
+//   }
 
-  /// 2
-  for (auto it = lidar_buf_.begin(); it != lidar_buf_.end();) {
-    if (it->timestamp >= traj_max) {
-      ++it;
-      continue;
-    }
-    bool add_entire_scan = AddToMsg(msgs, it, traj_max);
-    if (add_entire_scan) {
-      it = lidar_buf_.erase(it);  //
-    } else {
-      ++it;  //
-    }
-  }
-  LOG(INFO) << "[msgs_scan_num] " << msgs.scan_num;
+//   /// 2
+//   for (auto it = lidar_buf_.begin(); it != lidar_buf_.end();) {
+//     if (it->timestamp >= traj_max) {
+//       ++it;
+//       continue;
+//     }
+//     bool add_entire_scan = AddToMsg(msgs, it, traj_max);
+//     if (add_entire_scan) {
+//       it = lidar_buf_.erase(it);  //
+//     } else {
+//       ++it;  //
+//     }
+//   }
+//   LOG(INFO) << "[msgs_scan_num] " << msgs.scan_num;
 
-  /// 3
-  if (use_image_) {
-    ///
-    int img_idx = INT_MAX;
-    for (int i = 0; i < image_buf_.size(); i++) {
-      if (image_buf_[i].timestamp >= traj_last_max &&
-          image_buf_[i].timestamp < traj_max) {
-        img_idx = i;
-      }
-      if (image_buf_[i].timestamp >= traj_max) {
-        break;
-      }
-    }
+//   /// 3
+//   if (use_image_) {
+//     ///
+//     int img_idx = INT_MAX;
+//     for (int i = 0; i < image_buf_.size(); i++) {
+//       if (image_buf_[i].timestamp >= traj_last_max &&
+//           image_buf_[i].timestamp < traj_max) {
+//         img_idx = i;
+//       }
+//       if (image_buf_[i].timestamp >= traj_max) {
+//         break;
+//       }
+//     }
 
-    ///
-    // int img_idx = INT_MAX;
-    // for (int i = 0; i < image_buf_.size(); i++)
-    // {
-    //   if (image_buf_[i].timestamp >= traj_last_max &&
-    //       image_buf_[i].timestamp < traj_max)
-    //   {
-    //     img_idx = i;
-    //     break;
-    //   }
-    // }
+//     ///
+//     // int img_idx = INT_MAX;
+//     // for (int i = 0; i < image_buf_.size(); i++)
+//     // {
+//     //   if (image_buf_[i].timestamp >= traj_last_max &&
+//     //       image_buf_[i].timestamp < traj_max)
+//     //   {
+//     //     img_idx = i;
+//     //     break;
+//     //   }
+//     // }
 
-    if (img_idx != INT_MAX) {
-      AddImageToMsg(msgs, image_buf_[img_idx], traj_max);
-      // image_buf_.erase(image_buf_.begin() + img_idx);
-    } else {
-      msgs.if_have_image = false;
-      // std::cout << "[GetMsgs does not get a image]\n";
-      // std::getchar();
-    }
-  }
+//     if (img_idx != INT_MAX) {
+//       AddImageToMsg(msgs, image_buf_[img_idx], traj_max);
+//       // image_buf_.erase(image_buf_.begin() + img_idx);
+//     } else {
+//       msgs.if_have_image = false;
+//       // std::cout << "[GetMsgs does not get a image]\n";
+//       // std::getchar();
+//     }
+//   }
 
-  /// TODO 4
-  if (uwb_buf_.empty()) {
-    msgs.if_have_uwb = false;
-    LOG(INFO) << "uwb_buf_ is empty" << std::endl;
-  } else {
-    if (uwb_buf_.front().timestamp < traj_max) {
-      LOG(INFO) << "timestamp >= traj_max" << std::endl;
-      msgs.if_have_uwb = true;
-      msgs.uwb_msg = uwb_buf_.front();
-      uwb_buf_.pop_front();
-      LOG(INFO) << "uwb_buf_ pop_front: " << uwb_buf_.size();
-    } else {
-      LOG(INFO) << "timestamp < traj_max" << std::endl;
-      msgs.if_have_uwb = false;
-    }
-  }
-  return true;
-}
+//   /// TODO 4
+//   if (uwb_buf_.empty()) {
+//     msgs.if_have_uwb = false;
+//     LOG(INFO) << "uwb_buf_ is empty" << std::endl;
+//   } else {
+//     if (uwb_buf_.front().timestamp < traj_max) {
+//       LOG(INFO) << "timestamp >= traj_max" << std::endl;
+//       msgs.if_have_uwb = true;
+//       msgs.uwb_msg = uwb_buf_.front();
+//       uwb_buf_.pop_front();
+//       LOG(INFO) << "uwb_buf_ pop_front: " << uwb_buf_.size();
+//     } else {
+//       LOG(INFO) << "timestamp < traj_max" << std::endl;
+//       msgs.if_have_uwb = false;
+//     }
+//   }
+//   return true;
+// }
 
-void MsgManager::IMUMsgHandle(const sensor_msgs::Imu::ConstPtr &imu_msg) {
-  int64_t t_last = cur_imu_timestamp_;
-  // cur_imu_timestamp_ = imu_msg->header.stamp.toSec() -
-  // add_extra_timeoffset_s_;
-  cur_imu_timestamp_ = imu_msg->header.stamp.toSec() * S_TO_NS;
+// void MsgManager::IMUMsgHandle(const sensor_msgs::Imu::ConstPtr &imu_msg) {
+//   int64_t t_last = cur_imu_timestamp_;
+//   // cur_imu_timestamp_ = imu_msg->header.stamp.toSec() -
+//   // add_extra_timeoffset_s_;
+//   cur_imu_timestamp_ = imu_msg->header.stamp.toSec() * S_TO_NS;
 
-  IMUData data;
-  IMUMsgToIMUData(imu_msg, data);
+//   IMUData data;
+//   IMUMsgToIMUData(imu_msg, data);
 
-  /// problem
-  // data.timestamp -= add_extra_timeoffset_s_;
+//   /// problem
+//   // data.timestamp -= add_extra_timeoffset_s_;
 
-  // for trajectory_manager
-  imu_buf_.emplace_back(data);
-}
+//   // for trajectory_manager
+//   imu_buf_.emplace_back(data);
+// }
 
-void MsgManager::VelodyneMsgHandle(
-    const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
-  RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
-  velodyne_feature_extraction_->ParsePointCloud(vlp16_msg, vlp_raw_cloud);  //
+// void MsgManager::VelodyneMsgHandle(
+//     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
+//   RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
+//   velodyne_feature_extraction_->ParsePointCloud(vlp16_msg, vlp_raw_cloud); //
 
-  // transform the input cloud to Lidar0 frame
-  bool is_ipnl = false;  // TODO
-  if (is_ipnl) {
-    Eigen::Matrix4d T_IPNL;
-    T_IPNL << 0, 1, 0, 0,  //
-        -1, 0, 0, 0,       //
-        0, 0, 1, 0.28,     //
-        0, 0, 0, 1;
-    pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud, T_IPNL);
-  }
+//   // transform the input cloud to Lidar0 frame
+//   bool is_ipnl = false;  // TODO
+//   if (is_ipnl) {
+//     Eigen::Matrix4d T_IPNL;
+//     T_IPNL << 0, 1, 0, 0,  //
+//         -1, 0, 0, 0,       //
+//         0, 0, 1, 0.28,     //
+//         0, 0, 0, 1;
+//     pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud, T_IPNL);
+//   }
 
-  if (lidar_id != 0) {
-    pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
-                             T_LktoL0_vec_[lidar_id]);
-  }
-  //
-  velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
+//   if (lidar_id != 0) {
+//     pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
+//                              T_LktoL0_vec_[lidar_id]);
+//   }
+//   //
+//   velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
 
-  lidar_buf_.emplace_back();
-  lidar_buf_.back().lidar_id = lidar_id;
-  if (lidar_timestamp_end_) {
-    lidar_buf_.back().timestamp =
-        (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  // kaist、viral
-  } else {
-    lidar_buf_.back().timestamp =
-        vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
-  }
-  lidar_buf_.back().raw_cloud = vlp_raw_cloud;
-  lidar_buf_.back().surf_cloud =
-      velodyne_feature_extraction_->GetSurfaceFeature();
-  lidar_buf_.back().corner_cloud =
-      velodyne_feature_extraction_->GetCornerFeature();
-}
+//   lidar_buf_.emplace_back();
+//   lidar_buf_.back().lidar_id = lidar_id;
+//   if (lidar_timestamp_end_) {
+//     lidar_buf_.back().timestamp =
+//         (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  //
+//         kaist、viral
+//   } else {
+//     lidar_buf_.back().timestamp =
+//         vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
+//   }
+//   lidar_buf_.back().raw_cloud = vlp_raw_cloud;
+//   lidar_buf_.back().surf_cloud =
+//       velodyne_feature_extraction_->GetSurfaceFeature();
+//   lidar_buf_.back().corner_cloud =
+//       velodyne_feature_extraction_->GetCornerFeature();
+// }
 
 // void MsgManager::VelodyneMsgHandleNoFeature(
 //     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
@@ -669,26 +675,20 @@ void MsgManager::CalcExtrinsic() {
 }
 
 void MsgManager::UwbMsgHandle(
-    const nlink_parser::LinktrackTagframe0::ConstPtr &uwb_msg) {
+    const nlink_parser::LinktrackNodeframe3::ConstPtr &uwb_msg) {
   UwbData temp_uwb_data;
-  temp_uwb_data.timestamp = uwb_msg->local_time * 1e3;
-  // LOG(INFO) << "UWB timestamp: " << temp_uwb_data.timestamp;
+  temp_uwb_data.timestamp = uwb_msg->header.stamp.nsec;
+  LOG(INFO) << "[Debug] UWB timestamp: " << temp_uwb_data.timestamp;
 
   int anchor_num = 0;
-  for (size_t i = 0; i < uwb_msg->dis_arr.size(); i++) {
-    if (uwb_msg->dis_arr[i] > 1e-3) {
-      temp_uwb_data.anchor_distances[i] = uwb_msg->dis_arr[i];
-      anchor_num++;
-    } else {
-      LOG(INFO) << "Jump UWB anchor " << i
-                << " distance: " << uwb_msg->dis_arr[i];
-      continue;
-    }
+  for (auto node_ : uwb_msg->nodes) {
+    temp_uwb_data.anchor_distances.emplace(node_.id, node_.dis);
+    temp_uwb_data.fp_rssi = node_.fp_rssi;
+    temp_uwb_data.rx_rssi = node_.rx_rssi;
   }
+
   LOG(INFO) << "UWB anchor_num: " << anchor_num;
   temp_uwb_data.anchor_num = anchor_num;
-  temp_uwb_data.tag_position = Eigen::Vector3d(
-      uwb_msg->pos_3d[0], uwb_msg->pos_3d[1], uwb_msg->pos_3d[2]);
 
   // GetUWBPos(temp_uwb_data);
   if (!is_uwb_init_) {
