@@ -2,6 +2,8 @@
 #include <pcl-1.13/pcl/common/transforms.h>
 #include <utils/parameter_struct.h>
 
+using namespace sensor_fusion;
+
 namespace sensor_fusion {
 MsgManager::MsgManager(const YAML::Node &node, ros::NodeHandle &nh)
     : has_valid_msg_(true),
@@ -430,140 +432,142 @@ void MsgManager::VelodyneMsgHandle(
       velodyne_feature_extraction_->GetCornerFeature();
 }
 
-void MsgManager::VelodyneMsgHandleNoFeature(
-    const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
-  RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
-  velodyne_feature_extraction_->ParsePointCloudNoFeature(vlp16_msg,
-                                                         vlp_raw_cloud);  //
+// void MsgManager::VelodyneMsgHandleNoFeature(
+//     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
+//   RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
+//   velodyne_feature_extraction_->ParsePointCloudNoFeature(vlp16_msg,
+//                                                          vlp_raw_cloud);  //
 
-  // // transform the input cloud to Lidar0 frame
-  // if (lidar_id != 0)
-  //   pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
-  //                            T_LktoL0_vec_[lidar_id]);
+// // // transform the input cloud to Lidar0 frame
+// // if (lidar_id != 0)
+// //   pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
+// //                            T_LktoL0_vec_[lidar_id]);
 
-  // //
-  // velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
+// // //
+// // velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
 
-  lidar_buf_.emplace_back();
-  lidar_buf_.back().lidar_id = lidar_id;
-  if (lidar_timestamp_end_) {
-    lidar_buf_.back().timestamp =
-        (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  // kaist、viral
-  } else {
-    lidar_buf_.back().timestamp =
-        vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
-  }
-  lidar_buf_.back().raw_cloud = vlp_raw_cloud;
-  lidar_buf_.back().surf_cloud =
-      velodyne_feature_extraction_->GetSurfaceFeature();
-  lidar_buf_.back().corner_cloud =
-      velodyne_feature_extraction_->GetCornerFeature();
-}
+// lidar_buf_.emplace_back();
+// lidar_buf_.back().lidar_id = lidar_id;
+// if (lidar_timestamp_end_) {
+//   lidar_buf_.back().timestamp =
+//       (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  //
+//       kaist、viral
+// } else {
+//   lidar_buf_.back().timestamp =
+//       vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
+// }
+// lidar_buf_.back().raw_cloud = vlp_raw_cloud;
+// lidar_buf_.back().surf_cloud =
+//     velodyne_feature_extraction_->GetSurfaceFeature();
+// lidar_buf_.back().corner_cloud =
+//     velodyne_feature_extraction_->GetCornerFeature();
+// }
 
-void MsgManager::LivoxMsgHandle(
-    const livox_ros_driver2::CustomMsg::ConstPtr &livox_msg, int lidar_id) {
-  RTPointCloud::Ptr livox_raw_cloud(new RTPointCloud);
-  //
-  // livox_feature_extraction_->ParsePointCloud(livox_msg, livox_raw_cloud);
-  // livox_feature_extraction_->ParsePointCloudNoFeature(livox_msg,
-  // livox_raw_cloud);
-  livox_feature_extraction_->ParsePointCloudR3LIVE(livox_msg, livox_raw_cloud);
+// void MsgManager::LivoxMsgHandle(
+//     const livox_ros_driver2::CustomMsg::ConstPtr &livox_msg, int lidar_id) {
+// RTPointCloud::Ptr livox_raw_cloud(new RTPointCloud);
+// //
+// // livox_feature_extraction_->ParsePointCloud(livox_msg, livox_raw_cloud);
+// // livox_feature_extraction_->ParsePointCloudNoFeature(livox_msg,
+// // livox_raw_cloud);
+// livox_feature_extraction_->ParsePointCloudR3LIVE(livox_msg,
+// livox_raw_cloud);
 
-  LiDARCloudData data;
-  data.lidar_id = lidar_id;
-  data.timestamp = livox_msg->header.stamp.toSec() * S_TO_NS;
-  data.raw_cloud = livox_raw_cloud;
-  data.surf_cloud = livox_feature_extraction_->GetSurfaceFeature();
-  data.corner_cloud = livox_feature_extraction_->GetCornerFeature();
-  if (!data.raw_cloud->empty() && !data.surf_cloud->empty() &&
-      !data.corner_cloud->empty()) {
-    lidar_buf_.push_back(data);
-  } else {
-    ROS_WARN("Livox cloud is empty");
-  }
+// LiDARCloudData data;
+// data.lidar_id = lidar_id;
+// data.timestamp = livox_msg->header.stamp.toSec() * S_TO_NS;
+// data.raw_cloud = livox_raw_cloud;
+// data.surf_cloud = livox_feature_extraction_->GetSurfaceFeature();
+// data.corner_cloud = livox_feature_extraction_->GetCornerFeature();
+// if (!data.raw_cloud->empty() && !data.surf_cloud->empty() &&
+//     !data.corner_cloud->empty()) {
+//   lidar_buf_.push_back(data);
+// } else {
+//   ROS_WARN("Livox cloud is empty");
+// }
 
-  if (lidar_id != 0) {
-    pcl::transformPointCloud(*data.raw_cloud, *data.raw_cloud,
-                             T_LktoL0_vec_[lidar_id]);
-    pcl::transformPointCloud(*data.surf_cloud, *data.surf_cloud,
-                             T_LktoL0_vec_[lidar_id]);
-    pcl::transformPointCloud(*data.corner_cloud, *data.corner_cloud,
-                             T_LktoL0_vec_[lidar_id]);
-  }
-}
+// if (lidar_id != 0) {
+//   pcl::transformPointCloud(*data.raw_cloud, *data.raw_cloud,
+//                            T_LktoL0_vec_[lidar_id]);
+//   pcl::transformPointCloud(*data.surf_cloud, *data.surf_cloud,
+//                            T_LktoL0_vec_[lidar_id]);
+//   pcl::transformPointCloud(*data.corner_cloud, *data.corner_cloud,
+//                            T_LktoL0_vec_[lidar_id]);
+// }
+// }
 
 void MsgManager::ImageMsgHandle(const sensor_msgs::ImageConstPtr &msg) {
-  if (pub_img_.getNumSubscribers() != 0) {
-    pub_img_.publish(msg);
-  }
+  //   if (pub_img_.getNumSubscribers() != 0) {
+  //     pub_img_.publish(msg);
+  //   }
 
-  cv_bridge::CvImagePtr cvImgPtr;
-  cvImgPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-  if (cvImgPtr->image.empty()) {
-    std::cout << RED << "[ImageMsgHandle get an empty img]" << RESET
-              << std::endl;
-    return;
-  }
+  //   cv_bridge::CvImagePtr cvImgPtr;
+  //   cvImgPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+  //   if (cvImgPtr->image.empty()) {
+  //     std::cout << RED << "[ImageMsgHandle get an empty img]" << RESET
+  //               << std::endl;
+  //     return;
+  //   }
 
-  image_buf_.emplace_back();
-  image_buf_.back().timestamp = msg->header.stamp.toSec() * S_TO_NS;
-  image_buf_.back().image = cvImgPtr->image;
-  nerf_time_.push_back(image_buf_.back().timestamp);
+  //   image_buf_.emplace_back();
+  //   image_buf_.back().timestamp = msg->header.stamp.toSec() * S_TO_NS;
+  //   image_buf_.back().image = cvImgPtr->image;
+  //   nerf_time_.push_back(image_buf_.back().timestamp);
 
-  if (image_buf_.back().image.cols == 640 ||
-      image_buf_.back().image.cols == 1280) {
-    cv::resize(image_buf_.back().image, image_buf_.back().image,
-               cv::Size(640, 512), 0, 0, cv::INTER_LINEAR);
-  }
+  //   if (image_buf_.back().image.cols == 640 ||
+  //       image_buf_.back().image.cols == 1280) {
+  //     cv::resize(image_buf_.back().image, image_buf_.back().image,
+  //                cv::Size(640, 512), 0, 0, cv::INTER_LINEAR);
+  //   }
 
-  // // for tiers
-  // if (image_buf_.back().image.cols == 1920)
-  // {
-  //   cv::resize(image_buf_.back().image, image_buf_.back().image,
-  //   cv::Size(960, 540), 0, 0, cv::INTER_LINEAR);
+  //   // // for tiers
+  //   // if (image_buf_.back().image.cols == 1920)
+  //   // {
+  //   //   cv::resize(image_buf_.back().image, image_buf_.back().image,
+  //   //   cv::Size(960, 540), 0, 0, cv::INTER_LINEAR);
+  //   // }
   // }
-}
 
-void MsgManager::ImageMsgHandle(
-    const sensor_msgs::CompressedImageConstPtr &msg) {
-  if (pub_img_.getNumSubscribers() != 0) {
-    cv_bridge::CvImagePtr cvImgPtr =
-        cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    sensor_msgs::Image imgMsg = *(cvImgPtr->toImageMsg());
-    imgMsg.header = msg->header;  //
-    pub_img_.publish(msg);
-  }
+  // void MsgManager::ImageMsgHandle(
+  //     const sensor_msgs::CompressedImageConstPtr &msg) {
+  //   if (pub_img_.getNumSubscribers() != 0) {
+  //     cv_bridge::CvImagePtr cvImgPtr =
+  //         cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+  //     sensor_msgs::Image imgMsg = *(cvImgPtr->toImageMsg());
+  //     imgMsg.header = msg->header;  //
+  //     pub_img_.publish(msg);
+  //   }
 
-  cv_bridge::CvImagePtr cvImgPtr;
-  cvImgPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-  if (cvImgPtr->image.empty()) {
-    std::cout << RED << "[ImageMsgHandle get an empty img]" << RESET
-              << std::endl;
-    return;
-  }
+  //   cv_bridge::CvImagePtr cvImgPtr;
+  //   cvImgPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+  //   if (cvImgPtr->image.empty()) {
+  //     std::cout << RED << "[ImageMsgHandle get an empty img]" << RESET
+  //               << std::endl;
+  //     return;
+  //   }
 
-  image_buf_.emplace_back();
-  image_buf_.back().timestamp = msg->header.stamp.toSec() * S_TO_NS;
-  image_buf_.back().image = cvImgPtr->image;
-  nerf_time_.push_back(image_buf_.back().timestamp);
+  //   image_buf_.emplace_back();
+  //   image_buf_.back().timestamp = msg->header.stamp.toSec() * S_TO_NS;
+  //   image_buf_.back().image = cvImgPtr->image;
+  //   nerf_time_.push_back(image_buf_.back().timestamp);
 
-  // std::cout << image_buf_.back().image.rows << " " <<
-  // image_buf_.back().image.cols << std::endl;
+  //   // std::cout << image_buf_.back().image.rows << " " <<
+  //   // image_buf_.back().image.cols << std::endl;
 
-  if (image_buf_.back().image.cols == 640 ||
-      image_buf_.back().image.cols == 1280) {
-    cv::resize(image_buf_.back().image, image_buf_.back().image,
-               cv::Size(640, 512), 0, 0, cv::INTER_LINEAR);
-  }
+  //   if (image_buf_.back().image.cols == 640 ||
+  //       image_buf_.back().image.cols == 1280) {
+  //     cv::resize(image_buf_.back().image, image_buf_.back().image,
+  //                cv::Size(640, 512), 0, 0, cv::INTER_LINEAR);
+  //   }
 
-  // // for mars
-  // if (image_buf_.back().image.cols == 2448)
-  // {
-  //   // cv::resize(image_buf_.back().image, image_buf_.back().image,
-  //   cv::Size(1224, 1024), 0, 0, cv::INTER_LINEAR);
-  //   cv::resize(image_buf_.back().image, image_buf_.back().image,
-  //   cv::Size(612, 512), 0, 0, cv::INTER_LINEAR);
-  // }
+  //   // // for mars
+  //   // if (image_buf_.back().image.cols == 2448)
+  //   // {
+  //   //   // cv::resize(image_buf_.back().image, image_buf_.back().image,
+  //   //   cv::Size(1224, 1024), 0, 0, cv::INTER_LINEAR);
+  //   //   cv::resize(image_buf_.back().image, image_buf_.back().image,
+  //   //   cv::Size(612, 512), 0, 0, cv::INTER_LINEAR);
+  //   // }
 }
 
 void MsgManager::GetUWBPosInit(UwbData &measurements) {

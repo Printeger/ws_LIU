@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   message_generation
   image_transport
-  livox_ros_driver2
+  # livox_ros_driver2
   nlink_parser
 )
 
@@ -54,7 +54,6 @@ add_message_files(
   feature_cloud.msg
   imu_array.msg
   pose_array.msg
-  # uwb_array.msg
 )
 
 generate_messages(
@@ -92,46 +91,39 @@ list(APPEND thirdparty_libraries
         ${Boost_SERIALIZATION_LIBRARY} # serialization
 )
 
-file(GLOB lidar_odometry_files
-    "src/lidar/lidar_handler.cpp"
-    "src/lidar/velodyne_feature_extraction.cpp",
-    "src/lidar/livox_feature_extraction.cpp"
-)
-add_library(lidar_lib ${lidar_odometry_files})
-target_link_libraries(lidar_lib spline_lib ${thirdparty_libraries})
+# file(GLOB lidar_odometry_files
+#     "src/lidar/lidar_handler.cpp"
+#     "src/lidar/velodyne_feature_extraction.cpp",
+#     "src/lidar/livox_feature_extraction.cpp"
+# )
+# add_library(lidar_lib ${lidar_odometry_files})
+# target_link_libraries(lidar_lib spline_lib ${thirdparty_libraries})
 
-file(GLOB r3live_files
-    "src/camera/loam/*.cpp"
-    "src/camera/optical_flow/*.cpp"
-    "src/camera/rgb_map/*.cpp"
-    "src/camera/*.cpp"
-)
-add_library(r3live_lib ${r3live_files})
-target_link_libraries(r3live_lib ${thirdparty_libraries})
+# file(GLOB r3live_files
+#     "src/camera/loam/*.cpp"
+#     "src/camera/optical_flow/*.cpp"
+#     "src/camera/rgb_map/*.cpp"
+#     "src/camera/*.cpp"
+# )
+# add_library(r3live_lib ${r3live_files})
+# target_link_libraries(r3live_lib ${thirdparty_libraries})
 
-file(GLOB uwb_files
-    "src/uwb/uwb_handler.cpp"
-)
-add_library(uwb_lib ${uwb_files})
-target_link_libraries(uwb_lib ${thirdparty_libraries})
+# file(GLOB uwb_files
+#     "src/uwb/uwb_handler.cpp"
+# )
+# add_library(uwb_lib ${uwb_files})
+# target_link_libraries(uwb_lib ${thirdparty_libraries})
 
-add_executable(odometry_node 
-   src/odometry_node.cpp
-   src/imu/imu_state_estimator.cpp
-   src/imu/imu_initializer.cpp
-   src/odom/msg_manager.cpp
-   src/odom/trajectory_manager.cpp
-   src/odom/trajectory_estimator.cpp
-   src/odom/odometry_manager.cpp
-   src/odom/factor/analytic_diff/marginalization_factor.cpp
-   src/utils/parameter_struct.cpp
+add_executable(localization_node
+    odometry_node.cpp
+   src/msg_manager.cpp
 )
 
-target_link_libraries(odometry_node 
-   spline_lib 
-   lidar_lib 
-   r3live_lib
-   uwb_lib
-  ${thirdparty_libraries}
-  #  fmt::fmt
-)
+# target_link_libraries(odometry_node 
+#    spline_lib 
+#    lidar_lib 
+#    r3live_lib
+#    uwb_lib
+#   ${thirdparty_libraries}
+#   #  fmt::fmt
+# )

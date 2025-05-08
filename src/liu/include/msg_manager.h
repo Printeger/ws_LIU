@@ -10,15 +10,14 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <lidar/livox_feature_extraction.h>
-#include <lidar/velodyne_feature_extraction.h>
-#include <livox_ros_driver2/CustomMsg.h>
+// #include <lidar/livox_feature_extraction.h>
+// #include <lidar/velodyne_feature_extraction.h>
+// #include <livox_ros_driver2/CustomMsg.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <utils/log_utils.h>
-#include <utils/parameter_struct.h>
 
 #include <Eigen/Dense>
 #include <algorithm>
@@ -111,20 +110,20 @@ class MsgManager {
           sub_imu_ = nh.subscribe("config_.imu_topic", 1000,
                                   &MsgManager::IMUMsgHandle, this);
         } else if (type == 2) {
-          for (int j = 0; j < num_lidars_; ++j) {
-            if (lidar_types[j] == VLP) {
-              subs_vlp16_[j] = nh.subscribe(
-                  lidar_topics_[j], 1000,
-                  boost::bind(&MsgManager::VelodyneMsgHandle, this, _1, j));
-            } else if (lidar_types[j] == LIVOX) {
-              subs_livox_[j] = nh.subscribe(
-                  lidar_topics_[j], 1000,
-                  boost::bind(&MsgManager::LivoxMsgHandle, this, _1, j));
-            }
-          }
+          // for (int j = 0; j < num_lidars_; ++j) {
+          //   if (lidar_types[j] == VLP) {
+          //     subs_vlp16_[j] = nh.subscribe(
+          //         lidar_topics_[j], 1000,
+          //         boost::bind(&MsgManager::VelodyneMsgHandle, this, _1, j));
+          //   } else if (lidar_types[j] == LIVOX) {
+          //     subs_livox_[j] = nh.subscribe(
+          //         lidar_topics_[j], 1000,
+          //         boost::bind(&MsgManager::LivoxMsgHandle, this, _1, j));
+          //   }
+          // }
         } else if (type == 3) {
-          sub_image_ = nh.subscribe("config_.image_topic", 1000,
-                                    &MsgManager::ImageMsgHandle, this);
+          // sub_image_ =
+          //     nh.subscribe("config_.image_topic", 1000, ImageMsgHandle);
         }
       }
     }
@@ -206,6 +205,8 @@ class MsgManager {
 
   std::unordered_map<int, Eigen::Vector3d> anchor_id_positions;
 
+  uint8_t sensor_mask = 0;
+
  private:
   // int64_t cur_imu_timestamp_;
   // int64_t cur_pose_timestamp_;
@@ -239,11 +240,10 @@ class MsgManager {
   std::vector<ros::Subscriber> subs_vlp16_;
   std::vector<ros::Subscriber> subs_livox_;
 
-  VelodyneFeatureExtraction::Ptr velodyne_feature_extraction_;
-  LivoxFeatureExtraction::Ptr livox_feature_extraction_;
+  // VelodyneFeatureExtraction::Ptr velodyne_feature_extraction_;
+  // LivoxFeatureExtraction::Ptr livox_feature_extraction_;
 
   ros::Publisher pub_img_;
-  uint8_t sensor_mask = 0;
   SensorConfig config_;
 
   std::unordered_map<SensorType, SensorCallback> callbacks_;

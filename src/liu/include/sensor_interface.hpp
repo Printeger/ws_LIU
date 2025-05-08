@@ -13,11 +13,9 @@
 
 #include <fstream>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <unordered_map>
 
-#include "multi_sensor_fusion/sensor_data.hpp"
 #include "nlink_parser/LinktrackNodeframe3.h"
 #include "nlink_parser/LinktrackTagframe0.h"
 
@@ -129,11 +127,6 @@ struct SensorConfig {
     std::vector<double> CameraExtrinsics_Rot;
   } camera;
 };
-
-/**
- * @brief 传感器类型枚举
- */
-enum class SensorType { IMU, LIDAR, CAMERA, GPS, UWB, ODOMETRY, UNKNOWN };
 
 enum LiDARType {
   VLP = 0,
