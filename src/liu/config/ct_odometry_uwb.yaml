@@ -1,0 +1,59 @@
+odometry_mode: 1  # UO = 0, IUO = 1, LIUO = 2, LIO = 3, LICUO = 4
+
+log_path: /home/mint/ws_LIU/src/liu/log
+
+sensors:
+  UWB:
+    is_available: 1
+    uwb_range_topic: /nlink_linktrack_nodeframe3
+    num_uwb: 7
+    # an array, the IDs of the UWB anchors (the last ID is the moving module to be localized)
+    AnchorId: [00, 01, 02, 03, 04, 05, 06, 07]
+    # an array, the posistions (x, y, z) of the UWB anchors (the last three elements is the initial postion of the moving module to be localized)
+    AnchorPos: [-8.1926, -8.1926, 2.77,
+                -11.5862, 0, 0.5, 
+                -8.1926, 8.1926, 2.77, 
+                0, 11.5862, 0.5, 
+                8.1926, 8.1926, 2.77, 
+                11.5862, 0, 0.5, 
+                8.1926, -8.1926, 2.77, 
+                0, -11.5862, 0.5]
+    # the antenna offset on the moving module, there may be multiple antennas. DONOT SET IT IF THERE IS NO OFFSET  
+    antennaOffset: [-0.2, 0, 0, 0.2, 0, 0, 0, -0.1]
+
+  IMU:
+    is_available: 1
+    imu_topic: /imu 
+    imu_excite_threshold: 0.5  # statical initialization, do not move!
+    gravity_mag: 9.81
+    if_normalized: true  # if imu acc is normalized
+    if_use_init_bg: false
+
+    IMUExtrinsics:  # imu to imu
+        time_offset: 0.000
+        Trans: [0, 0, 0]
+        Rot: [ 1, 0, 0,
+              0, 1, 0,
+              0, 0, 1]
+
+  LiDAR:
+    is_available: 0
+    # rest of LiDAR configuration omitted since is_available is 0
+
+  Camera:
+    is_available: 0
+    # rest of Camera configuration omitted since is_available is 0
+
+### OptimizationParams ###
+t_begin_add_cam: 5.0  # [s] visual constraints will be added after the system has been successfully initialized for a while
+lidar_iter: 2
+use_lidar_scale: true  # scale the lidar weight
+lidar_weight: 100.0
+image_weight: 4.0
+uwb_weight: 1.0  # increased weight for UWB since we're focusing on it
+
+# imu params
+gyroscope_noise_density: 3.45557556e-03
+gyroscope_random_walk: 2.617993833e-07                    
+accelerometer_noise_density: 2.425376259e-02
+accelerometer_random_walk: 1.96e-06 

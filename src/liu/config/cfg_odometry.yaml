@@ -1,6 +1,6 @@
 odometry_mode: 0  # LIO = 0, LICO = 1， LIU = 2, LICU = 3, IU = 4
 
-log_path: /home/mint/ws_uav_setup/src/Coco-LIC-UWB/log
+log_path: /home/mint/ws_LIU/src/liu/log
 
 sensors:
   UWB:

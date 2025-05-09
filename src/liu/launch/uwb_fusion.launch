@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_path"       default = "$(find sensor_fusion)/config/ct_odometry_uwb.yaml" />
+  <arg name="bag_path"          default = "" />  
+  <arg name="pasue_time"        default = "-1" />
+  <arg name="verbose"           default = "false" />  
+  
+
+  <!-- <node pkg="sensor_fusion" type="localization_node" name="$(anon localization_node)" output="screen" clear_params="true" 
+        launch-prefix="gdb -ex run &#45;&#45;args"> -->
+    <node pkg="sensor_fusion" type="localization_node" name="$(anon localization_node)" output="screen">
+    <!-- <node pkg="sensor_fusion" type="localization_node" name="$(anon localization_node)" output="screen" launch-prefix="gdb -ex run -args"> -->
+    <param name="config_path"     type="string" value="$(arg config_path)" />
+    <!-- if 'bag_path' is none here then use get the 'bag_path' params in the yaml file-->
+    <param name="bag_path"        type="string" value="$(arg bag_path)" />
+    <param name="pasue_time"      type="double" value="$(arg pasue_time)" />
+    <param name="verbose"         type="bool"   value="$(arg verbose)" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="rviz_odom" output="log" required = "true" args="-d $(find sensor_fusion)/config/coco.rviz" />
+</launch>

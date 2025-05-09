@@ -116,14 +116,15 @@ list(APPEND thirdparty_libraries
 
 add_executable(localization_node
     odometry_node.cpp
-   src/msg_manager.cpp
+    src/msg_manager.cpp
 )
 
-# target_link_libraries(odometry_node 
-#    spline_lib 
-#    lidar_lib 
-#    r3live_lib
-#    uwb_lib
-#   ${thirdparty_libraries}
-#   #  fmt::fmt
-# )
+# Add target link libraries for localization_node
+target_link_libraries(localization_node
+   ${thirdparty_libraries}
+   glog
+   yaml-cpp
+   opencv_core
+   opencv_imgproc
+   opencv_highgui
+)

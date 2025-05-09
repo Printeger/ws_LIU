@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
   YAML::Node config_node = YAML::LoadFile(config_path);
 
   MsgManager msg_manager(config_node, nh);
-  msg_manager.processMask(msg_manager.sensor_mask, nh);
 
   // if ((sensor_mask >> UWB_INDEX) & 0x01) {
   //   // 构造或获取UWB消息

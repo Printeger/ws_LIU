@@ -53,12 +53,12 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
     config_.uwb.uwb_range_topic =
         node["sensors"]["UWB"]["uwb_range_topic"].as<std::string>();
     config_.uwb.num_uwb = node["sensors"]["UWB"]["num_uwb"].as<int>();
-    std::vector<int> anchor_ids = node["AnchorId"].as<std::vector<int>>();
+    std::vector<int> anchor_ids =
+        node["sensors"]["UWB"]["AnchorId"].as<std::vector<int>>();
     std::vector<double> anchor_positions =
-        node["AnchorPos"].as<std::vector<double>>();
+        node["sensors"]["UWB"]["AnchorPos"].as<std::vector<double>>();
 
-    for (size_t i = 0; i < anchor_ids.size() - 1;
-         i++) {  // -1是因为最后一个是移动模块
+    for (size_t i = 0; i < anchor_ids.size(); i++) {
       Eigen::Vector3d pos(anchor_positions[i * 3], anchor_positions[i * 3 + 1],
                           anchor_positions[i * 3 + 2]);
       anchor_id_positions[anchor_ids[i]] = pos;
@@ -382,125 +382,21 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
 //   return true;
 // }
 
-// void MsgManager::IMUMsgHandle(const sensor_msgs::Imu::ConstPtr &imu_msg) {
-//   int64_t t_last = cur_imu_timestamp_;
-//   // cur_imu_timestamp_ = imu_msg->header.stamp.toSec() -
-//   // add_extra_timeoffset_s_;
-//   cur_imu_timestamp_ = imu_msg->header.stamp.toSec() * S_TO_NS;
+void MsgManager::IMUMsgHandle(const sensor_msgs::Imu::ConstPtr &imu_msg) {
+  IMUData imu_data;
+  IMUMsgToIMUData(imu_msg, imu_data);
 
-//   IMUData data;
-//   IMUMsgToIMUData(imu_msg, data);
+  // Update current IMU timestamp
+  cur_imu_timestamp_ = imu_data.timestamp;
 
-//   /// problem
-//   // data.timestamp -= add_extra_timeoffset_s_;
+  // Store the IMU data
+  imu_buf_.push_back(imu_data);
 
-//   // for trajectory_manager
-//   imu_buf_.emplace_back(data);
-// }
-
-// void MsgManager::VelodyneMsgHandle(
-//     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
-//   RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
-//   velodyne_feature_extraction_->ParsePointCloud(vlp16_msg, vlp_raw_cloud); //
-
-//   // transform the input cloud to Lidar0 frame
-//   bool is_ipnl = false;  // TODO
-//   if (is_ipnl) {
-//     Eigen::Matrix4d T_IPNL;
-//     T_IPNL << 0, 1, 0, 0,  //
-//         -1, 0, 0, 0,       //
-//         0, 0, 1, 0.28,     //
-//         0, 0, 0, 1;
-//     pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud, T_IPNL);
-//   }
-
-//   if (lidar_id != 0) {
-//     pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
-//                              T_LktoL0_vec_[lidar_id]);
-//   }
-//   //
-//   velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
-
-//   lidar_buf_.emplace_back();
-//   lidar_buf_.back().lidar_id = lidar_id;
-//   if (lidar_timestamp_end_) {
-//     lidar_buf_.back().timestamp =
-//         (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  //
-//         kaist、viral
-//   } else {
-//     lidar_buf_.back().timestamp =
-//         vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
-//   }
-//   lidar_buf_.back().raw_cloud = vlp_raw_cloud;
-//   lidar_buf_.back().surf_cloud =
-//       velodyne_feature_extraction_->GetSurfaceFeature();
-//   lidar_buf_.back().corner_cloud =
-//       velodyne_feature_extraction_->GetCornerFeature();
-// }
-
-// void MsgManager::VelodyneMsgHandleNoFeature(
-//     const sensor_msgs::PointCloud2::ConstPtr &vlp16_msg, int lidar_id) {
-//   RTPointCloud::Ptr vlp_raw_cloud(new RTPointCloud);
-//   velodyne_feature_extraction_->ParsePointCloudNoFeature(vlp16_msg,
-//                                                          vlp_raw_cloud);  //
-
-// // // transform the input cloud to Lidar0 frame
-// // if (lidar_id != 0)
-// //   pcl::transformPointCloud(*vlp_raw_cloud, *vlp_raw_cloud,
-// //                            T_LktoL0_vec_[lidar_id]);
-
-// // //
-// // velodyne_feature_extraction_->LidarHandler(vlp_raw_cloud);
-
-// lidar_buf_.emplace_back();
-// lidar_buf_.back().lidar_id = lidar_id;
-// if (lidar_timestamp_end_) {
-//   lidar_buf_.back().timestamp =
-//       (vlp16_msg->header.stamp.toSec() - 0.1003) * S_TO_NS;  //
-//       kaist、viral
-// } else {
-//   lidar_buf_.back().timestamp =
-//       vlp16_msg->header.stamp.toSec() * S_TO_NS;  // lvi、lio
-// }
-// lidar_buf_.back().raw_cloud = vlp_raw_cloud;
-// lidar_buf_.back().surf_cloud =
-//     velodyne_feature_extraction_->GetSurfaceFeature();
-// lidar_buf_.back().corner_cloud =
-//     velodyne_feature_extraction_->GetCornerFeature();
-// }
-
-// void MsgManager::LivoxMsgHandle(
-//     const livox_ros_driver2::CustomMsg::ConstPtr &livox_msg, int lidar_id) {
-// RTPointCloud::Ptr livox_raw_cloud(new RTPointCloud);
-// //
-// // livox_feature_extraction_->ParsePointCloud(livox_msg, livox_raw_cloud);
-// // livox_feature_extraction_->ParsePointCloudNoFeature(livox_msg,
-// // livox_raw_cloud);
-// livox_feature_extraction_->ParsePointCloudR3LIVE(livox_msg,
-// livox_raw_cloud);
-
-// LiDARCloudData data;
-// data.lidar_id = lidar_id;
-// data.timestamp = livox_msg->header.stamp.toSec() * S_TO_NS;
-// data.raw_cloud = livox_raw_cloud;
-// data.surf_cloud = livox_feature_extraction_->GetSurfaceFeature();
-// data.corner_cloud = livox_feature_extraction_->GetCornerFeature();
-// if (!data.raw_cloud->empty() && !data.surf_cloud->empty() &&
-//     !data.corner_cloud->empty()) {
-//   lidar_buf_.push_back(data);
-// } else {
-//   ROS_WARN("Livox cloud is empty");
-// }
-
-// if (lidar_id != 0) {
-//   pcl::transformPointCloud(*data.raw_cloud, *data.raw_cloud,
-//                            T_LktoL0_vec_[lidar_id]);
-//   pcl::transformPointCloud(*data.surf_cloud, *data.surf_cloud,
-//                            T_LktoL0_vec_[lidar_id]);
-//   pcl::transformPointCloud(*data.corner_cloud, *data.corner_cloud,
-//                            T_LktoL0_vec_[lidar_id]);
-// }
-// }
+  // Call the registered callback if any
+  if (callbacks_.find(IMU) != callbacks_.end()) {
+    callbacks_[IMU]();
+  }
+}
 
 void MsgManager::ImageMsgHandle(const sensor_msgs::ImageConstPtr &msg) {
   //   if (pub_img_.getNumSubscribers() != 0) {
@@ -574,6 +470,7 @@ void MsgManager::ImageMsgHandle(const sensor_msgs::ImageConstPtr &msg) {
   //   //   cv::resize(image_buf_.back().image, image_buf_.back().image,
   //   //   cv::Size(612, 512), 0, 0, cv::INTER_LINEAR);
   //   // }
+  // }
 }
 
 void MsgManager::GetUWBPosInit(UwbData &measurements) {
@@ -685,6 +582,7 @@ void MsgManager::UwbMsgHandle(
     temp_uwb_data.anchor_distances.emplace(node_.id, node_.dis);
     temp_uwb_data.fp_rssi = node_.fp_rssi;
     temp_uwb_data.rx_rssi = node_.rx_rssi;
+    anchor_num++;
   }
 
   LOG(INFO) << "UWB anchor_num: " << anchor_num;

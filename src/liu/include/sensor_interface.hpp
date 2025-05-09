@@ -34,7 +34,7 @@ enum SensorMask : uint8_t {
 
 enum SensorType { UWB = 0, IMU = 1, LIDAR = 2, CAMERA = 3 };
 
-std::unordered_map<SensorType, std::string> sensor_type_names = {
+inline std::unordered_map<SensorType, std::string> sensor_type_names = {
     {UWB, "UWB"}, {IMU, "IMU"}, {LIDAR, "LiDAR"}, {CAMERA, "Camera"}};
 
 enum OdometryMode {
@@ -154,7 +154,7 @@ struct UwbData {
   bool is_time_wrt_traj_start;
   float fp_rssi;  // 第一路径信号强度
   float rx_rssi;  // 总接收信号强度
-  // “rx_rssi - fp_rssi”小于6dB 时，很有可能处于视距（LOS）状态；
+  // "rx_rssi - fp_rssi"小于6dB 时，很有可能处于视距（LOS）状态；
   // 当大于10dB时，很有可能处于非视距（NLOS）或多径状态，
 };
 
