@@ -22,7 +22,7 @@ sensors:
     antennaOffset: [-0.2, 0, 0, 0.2, 0, 0, 0, -0.1]
 
   IMU:
-    is_available: 1
+    is_available: 0
     imu_topic: /imu 
     imu_excite_threshold: 0.5  # statical initialization, do not move!
     gravity_mag: 9.81

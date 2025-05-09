@@ -100,33 +100,13 @@ class MsgManager {
     }
   }
 
-  inline void processMask(uint8_t sensor_mask, ros::NodeHandle &nh) {
-    for (int i = 0; i < 4; ++i) {
-      if ((sensor_mask >> i) & 0x01) {
-        auto type = static_cast<SensorType>(i);
-        if (type == 0) {
-          sub_uwb_ = nh.subscribe(config_.uwb.uwb_range_topic, 1000,
-                                  &MsgManager::UwbMsgHandle, this);
-        } else if (type == 1) {
-          sub_imu_ = nh.subscribe(config_.imu.imu_topic, 1000,
-                                  &MsgManager::IMUMsgHandle, this);
-        } else if (type == 2) {
-          // for (int j = 0; j < num_lidars_; ++j) {
-          //   if (lidar_types[j] == VLP) {
-          //     subs_vlp16_[j] = nh.subscribe(
-          //         lidar_topics_[j], 1000,
-          //         boost::bind(&MsgManager::VelodyneMsgHandle, this, _1, j));
-          //   } else if (lidar_types[j] == LIVOX) {
-          //     subs_livox_[j] = nh.subscribe(
-          //         lidar_topics_[j], 1000,
-          //         boost::bind(&MsgManager::LivoxMsgHandle, this, _1, j));
-          //   }
-          // }
-        } else if (type == 3) {
-          // sub_image_ =
-          //     nh.subscribe("config_.image_topic", 1000, ImageMsgHandle);
-        }
-      }
+  void processMask(uint8_t sensor_mask, ros::NodeHandle &nh);
+
+  inline void run() {
+    ros::Rate rate(1000);
+    while (ros::ok()) {
+      ros::spinOnce();
+      rate.sleep();
     }
   }
 

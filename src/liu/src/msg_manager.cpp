@@ -22,6 +22,7 @@ MsgManager::MsgManager(const YAML::Node &node, ros::NodeHandle &nh)
   auto mask_ = LoadConfig(node);
   OdometryMode odom_mode = selectOdometry(mask_);
   processMask(mask_, nh);
+  run();
   // LoadBag(node);
 }
 
@@ -36,7 +37,7 @@ OdometryMode MsgManager::selectOdometry(uint8_t sensor_mask) {
       return LIO;  // 0b00000110
     case (IMU_BIT | UWB_BIT):
       return IUO;  // 0b00001001
-    case (IMU_BIT):
+    case (UWB_BIT):
       return UO;  // 0b00000001
     default:
       throw std::runtime_error(
@@ -79,6 +80,43 @@ uint8_t MsgManager::LoadConfig(const YAML::Node &node) {
   }
 
   return sensor_mask;
+}
+
+void MsgManager::processMask(uint8_t sensor_mask, ros::NodeHandle &nh) {
+  for (int i = 0; i < 4; ++i) {
+    if ((sensor_mask >> i) & 0x01) {
+      auto type = static_cast<SensorType>(i);
+      if (type == 0) {
+        std::cout << "----- UWB available. " << config_.uwb.uwb_range_topic
+                  << std::endl;
+        sub_uwb_ = nh.subscribe(config_.uwb.uwb_range_topic, 1000,
+                                &MsgManager::UwbMsgHandle, this);
+      }
+      if (type == 1) {
+        std::cout << "----- IMU available. " << config_.imu.imu_topic
+                  << std::endl;
+        sub_imu_ = nh.subscribe(config_.imu.imu_topic, 1000,
+                                &MsgManager::IMUMsgHandle, this);
+      }
+      if (type == 2) {
+        // for (int j = 0; j < num_lidars_; ++j) {
+        //   if (lidar_types[j] == VLP) {
+        //     subs_vlp16_[j] = nh.subscribe(
+        //         lidar_topics_[j], 1000,
+        //         boost::bind(&MsgManager::VelodyneMsgHandle, this, _1, j));
+        //   } else if (lidar_types[j] == LIVOX) {
+        //     subs_livox_[j] = nh.subscribe(
+        //         lidar_topics_[j], 1000,
+        //         boost::bind(&MsgManager::LivoxMsgHandle, this, _1, j));
+        //   }
+        // }
+      }
+      if (type == 3) {
+        // sub_image_ =
+        //     nh.subscribe("config_.image_topic", 1000, ImageMsgHandle);
+      }
+    }
+  }
 }
 
 // void MsgManager::LogInfo() const {
@@ -573,6 +611,7 @@ void MsgManager::CalcExtrinsic() {
 
 void MsgManager::UwbMsgHandle(
     const nlink_parser::LinktrackNodeframe3::ConstPtr &uwb_msg) {
+  std::cout << "UWB MsgHandle" << std::endl;
   UwbData temp_uwb_data;
   temp_uwb_data.timestamp = uwb_msg->header.stamp.nsec;
   LOG(INFO) << "[Debug] UWB timestamp: " << temp_uwb_data.timestamp;
@@ -586,6 +625,7 @@ void MsgManager::UwbMsgHandle(
   }
 
   LOG(INFO) << "UWB anchor_num: " << anchor_num;
+  std::cout << "UWB anchor_num: " << anchor_num << std::endl;
   temp_uwb_data.anchor_num = anchor_num;
 
   // GetUWBPos(temp_uwb_data);
